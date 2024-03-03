@@ -4,15 +4,15 @@
 %
 
  
-rows = 20; 
-columns = 20;
+rows = 5; 
+columns = 5;
 
 % for extended grid checks to keep bounds
 minRows = 2;
 minCols = 2;
 
 % set simulation's duration and variables
-numIterations = 100;
+numIterations = 20;
 x = 1:rows;
 y = 1:columns;
  
@@ -21,16 +21,16 @@ neighborhoodSize = 8; % size of neighborhood
 %MAY NEED SOME OF THESE DIFFUSION CONSTANTS FOR CHEMICAL SIGNALING
 % r = 0.05; % Diffusion Constant
 % coolingRate = 0.2; % Cooling Constant
-numAmoebas = 10; %number of total amoebas
+numAmoebas = 5; %number of total amoebas
 amoebasPerCell = 1; %number of amoebes per section
 numClusters = numAmoebas/amoebasPerCell; %number of clusters started with
  
 environment =  zeros(rows, columns); % natural environment
-extEnviorment = zeros(rows+2, columns+2); % environment with bounds
+extEnvironment = zeros(rows+2, columns+2); % environment with bounds
 
 %create lists to update information through out simulation
 environmentList = zeros(rows, columns, numIterations);
-extEnviormentList = zeros(rows+2, columns+2, numIterations);
+extEnvironmentList = zeros(rows+2, columns+2, numIterations);
 clusterPosList = zeros(numClusters,2,numIterations);                                 
 
 
@@ -41,6 +41,7 @@ for i = 1:numClusters
     clusterPosList(i,:,1) = clusterPos;
 end
 
+extEnvironment(2:rows+1, 2:columns+1) = environment;
  
 % COULD BE USED TO MOVE AMOEBAS TOWARDS OTHERS
 % moveTowards= @(targetPos, currentPos)(currentPos + sign(targetPos - ...
@@ -49,13 +50,13 @@ end
 
 %set first index of each list correctly
 environmentList(:,:,1) = environment;
-extEnviormentList(:,:,1) = extEnviorment;
+extEnvironmentList(:,:,1) = extEnvironment;
 
-sumNeighbors = @(x, y, extEnviorment) (extEnviorment(x+1-1, y+1-1) + ...
-    extEnviorment(x+1-1, y+1) + extEnviorment(x+1-1, y+1+1) + ...
-    extEnviorment(x+1, y+1-1) + extEnviorment(x+1, y+1+1) + ...
-    extEnviorment(x+1+1, y+1-1) + extEnviorment(x+1+1, y+1) + ...
-    extEnviorment(x+1+1, y+1+1));
+sumNeighbors = @(x, y, extEnvironment) (extEnvironment(x+1-1, y+1-1) + ...
+    extEnvironment(x+1-1, y+1) + extEnvironment(x+1-1, y+1+1) + ...
+    extEnvironment(x+1, y+1-1) + extEnvironment(x+1, y+1+1) + ...
+    extEnvironment(x+1+1, y+1-1) + extEnvironment(x+1+1, y+1) + ...
+    extEnvironment(x+1+1, y+1+1));
 
 %Indexs for moving Amoeba clusters
 indexMapping ={[-1 -1], [0 -1], [1 -1], [-1 0], [1 0], [-1 1],[0 1],[1 1]};
@@ -65,48 +66,64 @@ indexMapping ={[-1 -1], [0 -1], [1 -1], [-1 0], [1 0], [-1 1],[0 1],[1 1]};
 for i = 2:numIterations
     %set enviorments properly for current iteration
     environment = environmentList(:,:,i-1);
-    extEnviorment = extEnviormentList(:,:,i-1);
+    extEnvironment = extEnvironmentList(:,:,i-1);
     
+    %disp(environment)
    
     %cycle through each cluster and move them accordingly accordingly
     for j = 1:numClusters
         %set position and cluster size
         clusterPos = clusterPosList(j,:,i-1);
-        clusterSize = extEnviorment(clusterPos(1), clusterPos(2));
-        extEnviorment(clusterPos(1), clusterPos(2)) = 0;
+
         if(clusterPos == [0,0])
-            continue;
+             continue;
         end
+        clusterSize = environment(clusterPos(1), clusterPos(2));
+        disp(clusterSize)
+        environment(clusterPos(1), clusterPos(2)) = 0;
+        
+        
         %if there are neighbors that are ameobas combine with them
-        if sumNeighbors(clusterPos(1),clusterPos(2),extEnviorment) > 0
+        if sumNeighbors(clusterPos(1),clusterPos(2),extEnvironment) > 0
+            disp("combined")
             %get neighbors and shape into 1d array
-            neighbors = reshape(extEnviorment(clusterPos(1)+1-1:...
+            neighbors = reshape(extEnvironment(clusterPos(1)+1-1:...
                 clusterPos(1)+1+1,clusterPos(2)-1+1:clusterPos(2)+1+1)...
                 ,1,[]);
             neighbors(5) = []; % remove the clusters original position
             
-            clusterMove = indexMapping{index};% find which direction to go
+            [maxNeighborSize, index] = max(neighbors);% find which direction to go
+            clusterMove = indexMapping{index};
+            
+            
             %get size of the neighboring cluster and combine the two
-            neighborSize = extEnviorment(clusterPos(1)+clusterMove(1),...
-                clusterPos(2)+clusterMove(2));
-            extEnviorment(clusterPos(1)+clusterMove(1),clusterPos(2)+...
-                clusterMove(2)) = neighborSize + clusterSize;
+            environment(clusterPos(1)+clusterMove(1),clusterPos(2)+...
+                clusterMove(2)) = maxNeighborSize + clusterSize;
+            extEnvironment(2:rows+1, 2:columns+1) = environment;
             
             %move comined cluster off the screen and remove from simulation 
-            clusterPosList(j,:,i)= [0,0];
-            
+             clusterPosList(j,:,i)= [0,0];
         else
+            %randomly choose movement for the cluster
             indsa = randi([1, 8]);
             clusterMove = indexMapping{indsa};
             clusterPos = [max(min(clusterPos(1) + clusterMove(1), rows), minRows), ...
                         max(min(clusterPos(2) + clusterMove(2), columns), minCols)];
-            extEnviorment(clusterPos(1), clusterPos(2)) = clusterSize;      
+                    
+            %update relevant variables
+            environment(clusterPos(1), clusterPos(2)) = clusterSize; 
+            extEnvironment(2:rows+1, 2:columns+1) = environment;
+            disp(environment(clusterPos(1), clusterPos(2)))
             clusterPosList(j,:,i)= clusterPos;
+            
         end
-        
         
     end
     
+%     disp(environment)
+%     w=waitforbuttonpress;
+    environmentList(:,:,i) = environment;
+    extEnvironmentList(:,:,i) = extEnvironment;
 
 end
  
@@ -131,7 +148,6 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,rows,colum
                     amoebasPosList(m,1,i)-0.5, 1, 1], 'FaceColor', 'g', ...
                     'EdgeColor', 'k');
         end
-        
 
 
         hold off;
@@ -141,7 +157,7 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,rows,colum
         title(sprintf('Simulation Frame: %d', i));
         set(gca,'YDir','reverse');
 
-        pause(0.1); % wait for a moment to proceed to the next frame
+        w=waitforbuttonpress;
         
     end
 end
