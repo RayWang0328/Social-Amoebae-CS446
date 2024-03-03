@@ -6,7 +6,8 @@
  
 rows = 20; 
 columns = 20;
-% for extended grid checks
+
+% for extended grid checks to keep bounds
 minRows = 2;
 minCols = 2;
 
@@ -17,11 +18,12 @@ y = 1:columns;
  
 neighborhoodSize = 8; % size of neighborhood
 
-%MAY NEED SOME OF THESE DIFFUSION CONSTANTS
-r = 0.05; % Diffusion Constant
-coolingRate = 0.2; % Cooling Constant
-numAmoebas = 10; %number of mammals
-
+%MAY NEED SOME OF THESE DIFFUSION CONSTANTS FOR CHEMICAL SIGNALING
+% r = 0.05; % Diffusion Constant
+% coolingRate = 0.2; % Cooling Constant
+numAmoebas = 10; %number of total amoebas
+amoebasPerCell = 1; %number of amoebes per section
+numClusters = numAmoebas/numClusters; %number of clusters started with
  
 environment =  zeros(rows, columns); % natural environment
 extEnviorment = zeros(rows+2, columns+2); % environment with bounds
@@ -29,63 +31,85 @@ extEnviorment = zeros(rows+2, columns+2); % environment with bounds
 %create lists to update information through out simulation
 environmentList = zeros(rows, columns, numIterations);
 extEnviormentList = zeros(rows+2, columns+2, numIterations);
-amoebasPosList = zeros(numAmoebas,2,numIterations); %rows 1..n-1 mammals,row n viper                                 
+clusterPosList = zeros(numClusters,2,numIterations);                                 
 
 
-% initial positions of amoebas
-for i = 1:numAmoebas
-    amoebasPosList(i,:,1) = [randi([1 rows]) randi([1 columns])];
-end
-
-
-%set amoebas
-for i = 1:numAmoebas
-    amoebasPos = amoebasPosList(i,:,1);
-    environment(amoebasPos(1), amoebasPos(2)) = 1;
+% initialize position and size of amoeba clusters
+for i = 1:numClusters
+    clusterPos = [randi([1 rows]) randi([1 columns])];
+    environment(clusterPos(1), clusterPos(2)) = amoebasPerCell;
+    clusterPosList(i,:,1) = clusterPos;
 end
 
  
- 
- 
-% random movement function
-randomMove = @(pos)[max(min(pos(1)+randi([-1,1]), rows), minRows) ...
-    max(min(pos(2)+randi([-1,1]), columns), minCols)];
- 
-% viper movement towards mammal
-moveTowards= @(targetPos, currentPos)(currentPos + sign(targetPos - currentPos));
+% COULD BE USED TO MOVE AMOEBAS TOWARDS OTHERS
+% moveTowards= @(targetPos, currentPos)(currentPos + sign(targetPos - ...
+%     currentPos));
 
 
 %set first index of each list correctly
 environmentList(:,:,1) = environment;
 extEnviormentList(:,:,1) = extEnviorment;
+
+sumNeighbors = @(x, y, extEnviorment) (extEnviorment(x+1-1, y+1-1) + ...
+    extEnviorment(x+1-1, y+1) + extEnviorment(x+1-1, y+1+1) + ...
+    extEnviorment(x+1, y+1-1) + extEnviorment(x+1, y+1+1) + ...
+    extEnviorment(x+1+1, y+1-1) + extEnviorment(x+1+1, y+1) + ...
+    extEnviorment(x+1+1, y+1+1));
+
+%Indexs for moving Amoeba clusters
+indexMapping ={[-1 -1], [0 -1], [1 -1], [-1 0], [1 0], [-1 1],[0 1],[1 1]};
+
  
 % simulation loop
 for i = 2:numIterations
-    %set enviorments properly
+    %set enviorments properly for current iteration
     environment = environmentList(:,:,i-1);
     extEnviorment = extEnviormentList(:,:,i-1);
     
-    %Indexs for moving Amoebas
-    indexMapping ={[-1 -1], [0 -1], [1 -1], [-1 0], [1 0], [-1 1],...
-            [0 1],[1 1]};
-
-    
-    for j = 1:numAmoebas
-        amoebaPos = amoebasPosList(j,:,i-1);
-        disp(amoebaPos)
-        extEnviorment(amoebaPos(1), amoebaPos(2)) = 0;
-        indsa = randi([1, 8]);
-        amoebaMove = indexMapping{indsa};
-        amoebaPos = [max(min(amoebaPos(1) + amoebaMove(1), rows), minRows), ...
-                    max(min(amoebaPos(2) + amoebaMove(2), columns), minCols)];
-                
-        amoebasPosList(j,:,i)= amoebaPos;
-    end
-    disp(amoebasPosList(j,:,i));
+    %list of indicies to remove clusters that have combined
+    indexRemoveCluster = [];
    
+    %cycle through each cluster and move them accordingly accordingly
+    for j = 1:numClusters
+        %set position and cluster size
+        clusterPos = clusterPosList(j,:,i-1);
+        clusterSize = extEnviorment(clusterPos(1), clusterPos(2));
+        extEnviorment(clusterPos(1), clusterPos(2)) = 0;
+      
+        %if there are neighbors that are ameobas combine with them
+        if sumNeighbors(clusterPos(1),clusterPos(2)) > 0
+            %get neighbors and shape into 1d array
+            neighbors = reshape(extEnviorment(clusterPos(1)+1-1:...
+                clusterPos(1)+1+1,clusterPos(2)-1+1:clusterPos(2)+1+1)...
+                ,1,[]);
+            neighbors(5) = []; % remove the clusters original position
+            
+            clusterMove = indexMapping{index};% find which direction to go
+            %get size of the neighboring cluster and combine the two
+            neighborSize = extEnviorment(clusterPos(1)+clusterMove(1),...
+                clusterPos(2)+clusterMove(2));
+            extEnviorment(clusterPos(1)+clusterMove(1),clusterPos(2)+...
+                clusterMove(2)) = neighborSize + clusterSize;
+            
+            clusterPosList(j,:,i)= (0,0);
+            
+        else
+            indsa = randi([1, 8]);
+            clusterMove = indexMapping{indsa};
+            clusterPos = [max(min(clusterPos(1) + clusterMove(1), rows), minRows), ...
+                        max(min(clusterPos(2) + clusterMove(2), columns), minCols)];
+            extEnviorment(clusterPos(1), clusterPos(2)) = amoebaPerCell;      
+            clusterPosList(j,:,i)= clusterPos;
+        end
+        
+        
+    end
+    
+
 end
  
-show_CA_List(environmentList, numAmoebas, amoebasPosList,rows,columns,1);
+show_CA_List(environmentList, numAmoebas, clusterPosList,rows,columns,1);
 
     
 function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,rows,columns,interval)
@@ -102,16 +126,11 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,rows,colum
        
         % Plot mammals positions on top of the heat map
         for m = 1:numAmoebas
-                rectangle('Position', [amoebasPosList(m,2,i)-0.5,...
+            rectangle('Position', [amoebasPosList(m,2,i)-0.5,...
                     amoebasPosList(m,1,i)-0.5, 1, 1], 'FaceColor', 'g', ...
                     'EdgeColor', 'k');
-               
-
         end
         
-        %plot vipers positions
-        rectangle('Position', [viperPos(2)-0.5, viperPos(1)-0.5, 1, 1], ...
-            'FaceColor', 'm', 'EdgeColor', 'k');
 
 
         hold off;
