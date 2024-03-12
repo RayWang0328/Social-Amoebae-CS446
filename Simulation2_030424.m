@@ -35,7 +35,7 @@ clusterPosList = zeros(numClusters,2,numIterations);
 clusterSizeList= zeros(numClusters,numIterations);
 
 food = 300; % Starting amount of food in the environment
-starvationThreshold = 150; % Food level at which clusters start to clump together
+starvationThreshold = 150; % Food level at which clusters start to clump
 foodDecayRate = 1;
 foodList = 1:numIterations;
 foodList(1) = food;
@@ -116,13 +116,15 @@ for i = 2:numIterations
             %randomly choose movement for the cluster
             if food < starvationThreshold && aliveClusters > 1
                 % Move towards the closest cluster
-                clusterMove = findClosestCluster(clusterPos, clusterPosList, i-1);
+                clusterMove = findClosestCluster(clusterPos, clusterPosList,...
+                    i-1);
             else
                 indsa = randi([1, 8]);
                 clusterMove = indexMapping{indsa};
             end
-            clusterPos = [max(min(clusterPos(1) + clusterMove(1), rows), minRows), ...
-                        max(min(clusterPos(2) + clusterMove(2), columns), minCols)];
+            clusterPos = [max(min(clusterPos(1) + clusterMove(1), rows),...
+                minRows), max(min(clusterPos(2) + clusterMove(2), columns), ...
+                minCols)];
                     
             %update relevant variables
             environment(clusterPos(1), clusterPos(2)) = clusterSize; 
@@ -143,24 +145,30 @@ for i = 2:numIterations
 
 end
  
-show_CA_List(environmentList, numAmoebas, clusterPosList,clusterSizeList,rows,columns,1, foodList);
+show_CA_List(environmentList, numAmoebas, clusterPosList,clusterSizeList,...
+    rows,columns,1, foodList);
 
-function closestMove = findClosestCluster(clusterPos, clusterPosList, currentIteration)
+function closestMove = findClosestCluster(clusterPos, clusterPosList, ...
+    currentIteration)
     minDistance = inf;
     closestMove = [0, 0];
     for i = 1:size(clusterPosList, 1)
-        if all(clusterPosList(i, :, currentIteration) == clusterPos) || all(clusterPosList(i, :, currentIteration) == [0, 0])
+        if all(clusterPosList(i, :, currentIteration) == clusterPos) ...
+                || all(clusterPosList(i, :, currentIteration) == [0, 0])
             continue; % Skip itself and clusters removed from simulation
         end
-        distance = sqrt(sum((clusterPos - clusterPosList(i, :, currentIteration)).^2));
+        distance = sqrt(sum((clusterPos - clusterPosList(i, :, ...
+            currentIteration)).^2));
         if distance < minDistance
             minDistance = distance;
-            closestMove = sign(clusterPosList(i, :, currentIteration) - clusterPos);
+            closestMove = sign(clusterPosList(i, :, currentIteration) - ...
+                clusterPos);
         end
     end
 end
 
-function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,clusterSizeList,rows,columns,interval, foodList)
+function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,...
+    clusterSizeList,rows,columns,interval, foodList)
 
     for i=1:interval:length(environmentList)
         environment = environmentList(:,:,i);
@@ -185,8 +193,10 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,clusterSiz
         caxis([0,12]);
         lifeCycleColors=colorbar;
         lifeCycleColors.Ticks=[1,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5];   
-        lifeCycleColors.TickLabels={'empty','1 amoeba','2 amoeba cluster','3 amoeba cluster',...
-        '4 amoeba cluster','5 amoeba cluster','6 amoeba cluster','7 amoeba cluster','8 amoeba cluster','9 amoeba cluster','10+ amoeba cluster'};
+        lifeCycleColors.TickLabels={'empty','1 amoeba','2 amoeba cluster',...
+            '3 amoeba cluster','4 amoeba cluster','5 amoeba cluster',...
+            '6 amoeba cluster','7 amoeba cluster','8 amoeba cluster',...
+            '9 amoeba cluster','10+ amoeba cluster'};
          hold;
         
         
@@ -202,8 +212,8 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,clusterSiz
                 
             
             rectangle('Position', [amoebasPosList(m,2,i)-0.5,...
-                    amoebasPosList(m,1,i)-0.5, 1, 1], 'FaceColor',[0,greencolor,0], ...
-                    'EdgeColor', 'k');
+                    amoebasPosList(m,1,i)-0.5, 1, 1], 'FaceColor',...
+                    [0,greencolor,0],'EdgeColor', 'k');
                 
         end    
            
@@ -214,7 +224,8 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,clusterSiz
         axis equal; axis tight; axis xy;
         xlim([0.5, rows + 0.5]);
         ylim([0.5, columns + 0.5]);
-        title(sprintf('Simulation Frame: %d, Food Available: %d', i, foodList(i)));
+        title(sprintf('Simulation Frame: %d, Food Available: %d', i, ...
+            foodList(i)));
         set(gca,'YDir','reverse');
 
         w=waitforbuttonpress;
