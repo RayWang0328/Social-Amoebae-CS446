@@ -60,6 +60,7 @@ extEnvironment(2:rows+1, 2:columns+1) = environment;
 environmentList(:,:,1) = environment;
 extEnvironmentList(:,:,1) = extEnvironment;
 
+%find the sum of the neighbors
 sumNeighbors = @(x, y, extEnvironment) (extEnvironment(x+1-1, y+1-1) + ...
     extEnvironment(x+1-1, y+1) + extEnvironment(x+1-1, y+1+1) + ...
     extEnvironment(x+1, y+1-1) + extEnvironment(x+1, y+1+1) + ...
@@ -93,7 +94,6 @@ for i = 2:numIterations
         
         %if there are neighbors that are ameobas combine with them
         if sumNeighbors(clusterPos(1),clusterPos(2),extEnvironment) > 0
-%             disp("combined")
             %get neighbors and shape into 1d array
             neighbors = reshape(extEnvironment(clusterPos(1)+1-1:...
                 clusterPos(1)+1+1,clusterPos(2)-1+1:clusterPos(2)+1+1)...
@@ -102,7 +102,6 @@ for i = 2:numIterations
             
             [maxNeighborSize, index] = max(neighbors);% find which direction to go
             clusterMove = indexMapping{index};
-            
             
             %get size of the neighboring cluster and combine the two
             environment(clusterPos(1)+clusterMove(1),clusterPos(2)+...
@@ -113,12 +112,13 @@ for i = 2:numIterations
              clusterPosList(j,:,i)= [0,0];
              aliveClusters = aliveClusters - 1;
         else
-            %randomly choose movement for the cluster
+            
             if food < starvationThreshold && aliveClusters > 1
                 % Move towards the closest cluster
                 clusterMove = findClosestCluster(clusterPos, clusterPosList,...
                     i-1);
             else
+                %randomly choose movement for the cluster
                 indsa = randi([1, 8]);
                 clusterMove = indexMapping{indsa};
             end
@@ -135,11 +135,11 @@ for i = 2:numIterations
         end
         
     end
+    %update current food and food variable list
     food = cast(food - (aliveClusters * foodDecayRate),"uint8");
     foodList(i) = food;
     
-%     disp(environment)
-% %     w=waitforbuttonpress;
+    %update environments lists
     environmentList(:,:,i) = environment;
     extEnvironmentList(:,:,i) = extEnvironment;
 
@@ -148,17 +148,24 @@ end
 show_CA_List(environmentList, numAmoebas, clusterPosList,clusterSizeList,...
     rows,columns,1, foodList);
 
+%function to find closet cluster for starvation
 function closestMove = findClosestCluster(clusterPos, clusterPosList, ...
     currentIteration)
+    %Set min distance to largest int and direction that cluster should move
     minDistance = inf;
     closestMove = [0, 0];
+    
+    %go through each cluster to find the short distance between itself and
+    %others
     for i = 1:size(clusterPosList, 1)
         if all(clusterPosList(i, :, currentIteration) == clusterPos) ...
                 || all(clusterPosList(i, :, currentIteration) == [0, 0])
             continue; % Skip itself and clusters removed from simulation
         end
+        %find distance of all other clusters
         distance = sqrt(sum((clusterPos - clusterPosList(i, :, ...
             currentIteration)).^2));
+        %set min distance and direction to move if shorter distance found
         if distance < minDistance
             minDistance = distance;
             closestMove = sign(clusterPosList(i, :, currentIteration) - ...
@@ -174,7 +181,7 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,...
         environment = environmentList(:,:,i);
         hold on;
 
-       
+       %map to set colors for legend
         map=[ 0.478 0.318 0.102
              0.478 0.318 0.102
              0,.9,0
@@ -190,6 +197,7 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,...
         imagesc(environment);
         colormap(map);
         
+        %more set up for legend
         caxis([0,12]);
         lifeCycleColors=colorbar;
         lifeCycleColors.Ticks=[1,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5];   
