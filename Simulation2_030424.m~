@@ -1,11 +1,11 @@
 % Emmett Smith, Ray Wang, MJ Pennington
 % CS346 
-% Fall, 2023
+% Spring 202
 %
 
  
-rows = 20; 
-columns = 20;
+rows = 30; 
+columns = 30;
 
 % for extended grid checks to keep bounds
 minRows = 2;
@@ -35,10 +35,10 @@ clusterPosList = zeros(numClusters,2,numIterations);
 clusterSizeList= zeros(numClusters,numIterations);
 
 food = 300; % Starting amount of food in the environment
-starvationThreshold = 50; % Food level at which clusters start to clump together
-foodDecayRate = 0.5;
+starvationThreshold = 150; % Food level at which clusters start to clump
+foodDecayRate = 1;
 foodList = 1:numIterations;
-foodList(1)
+foodList(1) = food;
 
 aliveClusters = numAmoebas;
 
@@ -60,6 +60,7 @@ extEnvironment(2:rows+1, 2:columns+1) = environment;
 environmentList(:,:,1) = environment;
 extEnvironmentList(:,:,1) = extEnvironment;
 
+%find the sum of the neighbors
 sumNeighbors = @(x, y, extEnvironment) (extEnvironment(x+1-1, y+1-1) + ...
     extEnvironment(x+1-1, y+1) + extEnvironment(x+1-1, y+1+1) + ...
     extEnvironment(x+1, y+1-1) + extEnvironment(x+1, y+1+1) + ...
@@ -93,7 +94,6 @@ for i = 2:numIterations
         
         %if there are neighbors that are ameobas combine with them
         if sumNeighbors(clusterPos(1),clusterPos(2),extEnvironment) > 0
-%             disp("combined")
             %get neighbors and shape into 1d array
             neighbors = reshape(extEnvironment(clusterPos(1)+1-1:...
                 clusterPos(1)+1+1,clusterPos(2)-1+1:clusterPos(2)+1+1)...
@@ -102,7 +102,6 @@ for i = 2:numIterations
             
             [maxNeighborSize, index] = max(neighbors);% find which direction to go
             clusterMove = indexMapping{index};
-            
             
             %get size of the neighboring cluster and combine the two
             environment(clusterPos(1)+clusterMove(1),clusterPos(2)+...
@@ -113,16 +112,19 @@ for i = 2:numIterations
              clusterPosList(j,:,i)= [0,0];
              aliveClusters = aliveClusters - 1;
         else
-            %randomly choose movement for the cluster
+            
             if food < starvationThreshold && aliveClusters > 1
                 % Move towards the closest cluster
-                clusterMove = findClosestCluster(clusterPos, clusterPosList, i-1);
+                clusterMove = findClosestCluster(clusterPos, clusterPosList,...
+                    i-1);
             else
+                %randomly choose movement for the cluster
                 indsa = randi([1, 8]);
                 clusterMove = indexMapping{indsa};
             end
-            clusterPos = [max(min(clusterPos(1) + clusterMove(1), rows), minRows), ...
-                        max(min(clusterPos(2) + clusterMove(2), columns), minCols)];
+            clusterPos = [max(min(clusterPos(1) + clusterMove(1), rows),...
+                minRows), max(min(clusterPos(2) + clusterMove(2), columns), ...
+                minCols)];
                     
             %update relevant variables
             environment(clusterPos(1), clusterPos(2)) = clusterSize; 
@@ -133,40 +135,53 @@ for i = 2:numIterations
         end
         
     end
-    food = food - (aliveClusters * foodDecayRate);
+    %update current food and food variable list
+    food = cast(food - (aliveClusters * foodDecayRate),"uint8");
     foodList(i) = food;
     
-%     disp(environment)
-% %     w=waitforbuttonpress;
+    %update environments lists
     environmentList(:,:,i) = environment;
     extEnvironmentList(:,:,i) = extEnvironment;
 
 end
  
-show_CA_List(environmentList, numAmoebas, clusterPosList,clusterSizeList,rows,columns,1);
+show_CA_List(environmentList, numAmoebas, clusterPosList,clusterSizeList,...
+    rows,columns,1, foodList);
 
-function closestMove = findClosestCluster(clusterPos, clusterPosList, currentIteration)
+%function to find closet cluster for starvation
+function closestMove = findClosestCluster(clusterPos, clusterPosList, ...
+    currentIteration)
+    %Set min distance to largest int and direction that cluster should move
     minDistance = inf;
     closestMove = [0, 0];
+    
+    %go through each cluster to find the short distance between itself and
+    %others
     for i = 1:size(clusterPosList, 1)
-        if all(clusterPosList(i, :, currentIteration) == clusterPos) || all(clusterPosList(i, :, currentIteration) == [0, 0])
+        if all(clusterPosList(i, :, currentIteration) == clusterPos) ...
+                || all(clusterPosList(i, :, currentIteration) == [0, 0])
             continue; % Skip itself and clusters removed from simulation
         end
-        distance = sqrt(sum((clusterPos - clusterPosList(i, :, currentIteration)).^2));
+        %find distance of all other clusters
+        distance = sqrt(sum((clusterPos - clusterPosList(i, :, ...
+            currentIteration)).^2));
+        %set min distance and direction to move if shorter distance found
         if distance < minDistance
             minDistance = distance;
-            closestMove = sign(clusterPosList(i, :, currentIteration) - clusterPos);
+            closestMove = sign(clusterPosList(i, :, currentIteration) - ...
+                clusterPos);
         end
     end
 end
 
-function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,clusterSizeList,rows,columns,interval)
+function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,...
+    clusterSizeList,rows,columns,interval, foodList)
 
     for i=1:interval:length(environmentList)
         environment = environmentList(:,:,i);
         hold on;
 
-       
+       %map to set colors for legend
         map=[ 0.478 0.318 0.102
              0.478 0.318 0.102
              0,.9,0
@@ -182,11 +197,14 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,clusterSiz
         imagesc(environment);
         colormap(map);
         
+        %more set up for legend
         caxis([0,12]);
         lifeCycleColors=colorbar;
         lifeCycleColors.Ticks=[1,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5];   
-        lifeCycleColors.TickLabels={'empty','1 amoeba','2 amoeba cluster','3 amoeba cluster',...
-        '4 amoeba cluster','5 amoeba cluster','6 amoeba cluster','7 amoeba cluster','8 amoeba cluster','9 amoeba cluster','10+ amoeba cluster'};
+        lifeCycleColors.TickLabels={'empty','1 amoeba','2 amoeba cluster',...
+            '3 amoeba cluster','4 amoeba cluster','5 amoeba cluster',...
+            '6 amoeba cluster','7 amoeba cluster','8 amoeba cluster',...
+            '9 amoeba cluster','10+ amoeba cluster'};
          hold;
         
         
@@ -202,8 +220,8 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,clusterSiz
                 
             
             rectangle('Position', [amoebasPosList(m,2,i)-0.5,...
-                    amoebasPosList(m,1,i)-0.5, 1, 1], 'FaceColor',[0,greencolor,0], ...
-                    'EdgeColor', 'k');
+                    amoebasPosList(m,1,i)-0.5, 1, 1], 'FaceColor',...
+                    [0,greencolor,0],'EdgeColor', 'k');
                 
         end    
            
@@ -214,7 +232,8 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,clusterSiz
         axis equal; axis tight; axis xy;
         xlim([0.5, rows + 0.5]);
         ylim([0.5, columns + 0.5]);
-        title(sprintf('Simulation Frame: %d', i));
+        title(sprintf('Simulation Frame: %d, Food Available: %d', i, ...
+            foodList(i)));
         set(gca,'YDir','reverse');
 
         w=waitforbuttonpress;

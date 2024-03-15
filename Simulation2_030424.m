@@ -1,6 +1,6 @@
 % Emmett Smith, Ray Wang, MJ Pennington
 % CS346 
-% Fall, 2023
+% Spring 2024
 %
 
  
