@@ -95,14 +95,9 @@ for i = 2:numIterations
         
        if rem(i,reproduction)==0
            disp("reproducing")
-           
-           newClusterPos=zeros(1,2,1);
-           newClusterPos(1)=clusterPos(1)+1;
-           newClusterPos(2)=clusterPos(2)+1;
-           disp(newClusterPos)
-           disp(ndims(newClusterPos))
-           disp(ndims(clusterPosList))
-           clusterPosList[=[clusterPosList;newClusterPos]
+           numClusters=numClusters+1;
+           newClusterPos=((clusterPos(1)+1),(clusterPos(2)+1));
+           clusterPosList(end+1)=newClusterPos;
           
        end
         

@@ -93,16 +93,15 @@ for i = 2:numIterations
         environment(clusterPos(1), clusterPos(2)) = 0;
         
         
-       if rem(i,reproduction)==0
+       if rem(i,reproduction)==0 %check if it is a reproduction iteration
            disp("reproducing")
-           numClusters=numClusters+1;
-           newClusterPos=zeros(1,2,1);
-           newClusterPos(1)=clusterPos(1)+1;
-           newClusterPos(2)=clusterPos(2)+1;
-           disp(newClusterPos)
-           disp(ndims(newClusterPos))
-           disp(ndims(clusterPosList))
-           clusterPosList=[clusterPosList;newClusterPos]
+           numClusters=numClusters+1; %increase number of clusters
+           newClusterPos=[(clusterPos(1)+1),(clusterPos(2)+1)]; %assign ... 
+           %new cluster position based on old (put it to top right)
+           disp(clusterPosList)
+           disp(clusterPosList(end,:))
+           disp(clusterPosList(i,:))
+           clusterPosList(end+1,end+1:end+2)=newClusterPos;
           
        end
         
