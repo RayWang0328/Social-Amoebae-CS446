@@ -101,7 +101,8 @@ for i = 2:numIterations
          end
         
         %if there are neighbors that are ameobas combine with them
-        if sumNeighbors(clusterPos(1),clusterPos(2),extEnvironment) > 0
+        if sumNeighbors(clusterPos(1),clusterPos(2),extEnvironment) > 0 &&...
+             food < starvationThreshold
             %get neighbors and shape into 1d array
             neighbors = reshape(extEnvironment(clusterPos(1)+1-1:...
                 clusterPos(1)+1+1,clusterPos(2)-1+1:clusterPos(2)+1+1)...
