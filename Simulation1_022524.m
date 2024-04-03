@@ -4,8 +4,8 @@
 %
 
  
-rows = 5; 
-columns = 5;
+rows = 20; 
+columns = 20;
 
 % for extended grid checks to keep bounds
 minRows = 2;
@@ -21,7 +21,7 @@ neighborhoodSize = 8; % size of neighborhood
 %MAY NEED SOME OF THESE DIFFUSION CONSTANTS FOR CHEMICAL SIGNALING
 % r = 0.05; % Diffusion Constant
 % coolingRate = 0.2; % Cooling Constant
-numAmoebas = 5; %number of total amoebas
+numAmoebas = 10; %number of total amoebas
 amoebasPerCell = 1; %number of amoebes per section
 numClusters = numAmoebas/amoebasPerCell; %number of clusters started with
  
