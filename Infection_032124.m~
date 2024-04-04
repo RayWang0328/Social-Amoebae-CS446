@@ -40,11 +40,12 @@ extEnvironment = zeros(rows+2, columns+2); % environment with bounds
 %create lists to update information through out simulation
 environmentList = zeros(rows, columns, numIterations);
 extEnvironmentList = zeros(rows+2, columns+2, numIterations);
-clusterPosList = zeros(numClusters,2,numIterations);
 
-%first number represents total cluster size and second number is the amount
+
+%first two numbers are x,y coordinates 
+%third number represents total cluster size and fourth number is the amount
 %of infected amoeba in the cluster
-clusterSizeList= zeros(numClusters,2, numIterations);
+clusterCharacteristics= zeros(numClusters,4, numIterations);
 
 food = 2000; % Starting amount of food in the environment
 starvationThreshold = 150; % Food level at which clusters start to clump
@@ -58,21 +59,18 @@ aliveClusters = numClusters;
 for i = 1:numClusters
     clusterPos = [randi([1 rows]) randi([1 columns])];
     environment(clusterPos(1), clusterPos(2)) = amoebasPerCell;
-    clusterPosList(i,:,1) = clusterPos;
+    clusterCharacteristics(i,1:2,1) = clusterPos;
     
     %set number of infected clusters
     if i<=numInfectedClusters
-        clusterSizeList(i,:,1) = [amoebasPerCell,amoebasPerCell];
+        %THIS MIGHT ADD AN ARRAY AND FREAK OUT, MAYBE DEBUG
+        clusterCharacteristics(i,3:4,1) = [amoebasPerCell,amoebasPerCell];
     else
-        clusterSizeList(i,:,1) = [amoebasPerCell,0];
+        clusterCharacteristics(i,3:4,1) = [amoebasPerCell,0];
     end
 end
 
 extEnvironment(2:rows+1, 2:columns+1) = environment;
- 
-% COULD BE USED TO MOVE AMOEBAS TOWARDS OTHERS
-% moveTowards= @(targetPos, currentPos)(currentPos + sign(targetPos - ...
-%     currentPos));
 
 
 %set first index of each list correctly
@@ -95,7 +93,7 @@ for i = 2:numIterations
     %set enviorments properly for current iteration
     environment = environmentList(:,:,i-1);
     extEnvironment = extEnvironmentList(:,:,i-1);
-    clusterPositions = clusterPosList(:,:,i-1);
+    clusterPositions = clusterCharacteristics(:,1:2,i-1);
     
     %cycle through each cluster and move them accordingly accordingly
     for j = 1:numClusters
@@ -105,14 +103,14 @@ for i = 2:numIterations
         if(clusterPos == [0,0])
              continue;
         end
-        clusterSize = clusterSizeList(j,1,i-1);
-        clusterInfected = clusterSizeList(j,2,i-1);
+        clusterSize = clusterCharacteristics(j,3,i-1);
+        clusterInfected = clusterCharacteristics(j,4,i-1);
         environment(clusterPos(1), clusterPos(2)) = 0;
         
-         if rem(i,reproductionTime)==0 %check if it is a reproduction iteration
-            clusterSize = round(reproductionRate *clusterSize);
-            clusterInfected = round(reproductionRate *clusterInfected);
-         end
+%          if rem(i,reproductionTime)==0 %check if it is a reproduction iteration
+%             clusterSize = round(reproductionRate *clusterSize);
+%             clusterInfected = round(reproductionRate *clusterInfected);
+%          end
         
         %if there are neighbors that are ameobas combine with them
         if sumNeighbors(clusterPos(1),clusterPos(2),extEnvironment) > 0 &&...
@@ -125,35 +123,32 @@ for i = 2:numIterations
             
             [maxNeighborSize, index] = max(neighbors);% find which direction to go
             clusterMove = indexMapping{index};
+            disp([maxNeighborSize,clusterSize])
             %update cluster size from max neighbor
             clusterSize = maxNeighborSize + clusterSize;
+            disp(clusterSize)
         
             %get size of the neighboring cluster and combine the two
-            environment(clusterPos(1),clusterPos(2)) = clusterSize;
-            
-            %get row where the other cluster is located and update number
-            %of infected
+            environment(clusterPos(1)+clusterMove(1),clusterPos(2)+...
+                clusterMove(2)) = clusterSize;
+            extEnvironment(2:rows+1, 2:columns+1) = environment;
+
+            %find number of infected
             rowIndex = find(ismember(clusterPositions,[clusterPos(1)+...
                 clusterMove(1),clusterPos(2)+clusterMove(2)], 'rows'));
-%             disp("Initial Infection")
-%             disp(clusterInfected)
-%             disp("New Infection")
-%             disp(clusterSizeList(rowIndex,2,i-1))
-            clusterInfected = clusterInfected + clusterSizeList(rowIndex...
-                ,2,i-1);
-%             disp("Final Infection")
-%             disp(clusterInfected)
+            clusterInfected = clusterInfected + clusterCharacteristics...
+                (rowIndex,4,i-1);
             
             %move comined cluster off the screen and remove from simulation 
-             clusterPosList(j,:,i)= [0,0];
-             clusterSizeList(rowIndex,:,i) = [clusterSize,clusterInfected];
+             clusterCharacteristics(j,1:2,i)= [0,0];
+                
+             clusterCharacteristics(rowIndex,3:4,i) = [clusterSize,clusterInfected];
              aliveClusters = aliveClusters - 1;
         else
             
             if food < starvationThreshold && aliveClusters > 1
                 % Move towards the closest cluster
-                clusterMove = findClosestCluster(clusterPos, clusterPosList,...
-                    i-1);
+                clusterMove = findClosestCluster(clusterPos, clusterPositions);
             else
                 %randomly choose movement for the cluster
                 indsa = randi([1, 8]);
@@ -167,9 +162,9 @@ for i = 2:numIterations
             environment(clusterPos(1), clusterPos(2)) = clusterSize; 
             extEnvironment(2:rows+1, 2:columns+1) = environment;
             
-            clusterPosList(j,:,i)= clusterPos;
+            clusterCharacteristics(j,1:2,i)= clusterPos;
             %update infection and size
-            clusterSizeList(j,:,i) = [clusterSize,clusterInfected];
+            clusterCharacteristics(j,3:4,i) = [clusterSize,clusterInfected];
             
         end
         
@@ -186,12 +181,11 @@ for i = 2:numIterations
 
 end
  
-show_CA_List(environmentList, numClusters, clusterPosList,clusterSizeList,...
+show_CA_List(environmentList, numClusters, clusterCharacteristics,...
     rows,columns,1, foodList);
 
 %function to find closet cluster for starvation
-function closestMove = findClosestCluster(clusterPos, clusterPosList, ...
-    currentIteration)
+function closestMove = findClosestCluster(clusterPos, clusterPosList)
     %Set min distance to largest int and direction that cluster should move
     minDistance = inf;
     closestMove = [0, 0];
@@ -199,24 +193,23 @@ function closestMove = findClosestCluster(clusterPos, clusterPosList, ...
     %go through each cluster to find the short distance between itself and
     %others
     for i = 1:size(clusterPosList, 1)
-        if all(clusterPosList(i, :, currentIteration) == clusterPos) ...
-                || all(clusterPosList(i, :, currentIteration) == [0, 0])
+        if all(clusterPosList(i, :) == clusterPos) ...
+                || all(clusterPosList(i, :) == [0, 0])
             continue; % Skip itself and clusters removed from simulation
         end
         %find distance of all other clusters
-        distance = sqrt(sum((clusterPos - clusterPosList(i, :, ...
-            currentIteration)).^2));
+        distance = sqrt(sum((clusterPos - clusterPosList(i, :)).^2));
         %set min distance and direction to move if shorter distance found
         if distance < minDistance
             minDistance = distance;
-            closestMove = sign(clusterPosList(i, :, currentIteration) - ...
+            closestMove = sign(clusterPosList(i, :) - ...
                 clusterPos);
         end
     end
 end
 
-function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,...
-    clusterSizeList,rows,columns,interval, foodList)
+function [ ] = show_CA_List(environmentList,numAmoebas,clusterCharacteristics,...
+    rows,columns,interval, foodList)
 
     for i=1:interval:length(environmentList)
         environment = environmentList(:,:,i);
@@ -253,15 +246,15 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,...
         % Plot mammals positions on top of the heat map
         for m = 1:numAmoebas
             
-            if (1-clusterSizeList(m,1,i)*.1)>0
-                greencolor=1-clusterSizeList(m,1,i)*.1;
+            if (1-clusterCharacteristics(m,3,i)*.1)>0
+                greencolor=1-clusterCharacteristics(m,3,i)*.1;
       
             else greencolor=0; 
             end
                 
             
-            rectangle('Position', [amoebasPosList(m,2,i)-0.5,...
-                    amoebasPosList(m,1,i)-0.5, 1, 1], 'FaceColor',...
+            rectangle('Position', [clusterCharacteristics(m,2,i)-0.5,...
+                    clusterCharacteristics(m,1,i)-0.5, 1, 1], 'FaceColor',...
                     [0,greencolor,0],'EdgeColor', 'k');
                 
         end    
