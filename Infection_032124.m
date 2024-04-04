@@ -109,10 +109,10 @@ for i = 2:numIterations
         clusterInfected = clusterSizeList(j,2,i-1);
         environment(clusterPos(1), clusterPos(2)) = 0;
         
-         if rem(i,reproductionTime)==0 %check if it is a reproduction iteration
-            clusterSize = round(reproductionRate *clusterSize);
-            clusterInfected = round(reproductionRate *clusterInfected);
-         end
+         %if rem(i,reproductionTime)==0 %check if it is a reproduction iteration
+            %clusterSize = round(reproductionRate *clusterSize);
+            %clusterInfected = round(reproductionRate *clusterInfected);
+         %end
         
         %if there are neighbors that are ameobas combine with them
         if sumNeighbors(clusterPos(1),clusterPos(2),extEnvironment) > 0 &&...
