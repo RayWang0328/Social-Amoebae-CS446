@@ -19,14 +19,14 @@ y = 1:columns;
 neighborhoodSize = 8; % size of neighborhood
 
 reproductionTime=2; % every 10 frames amoebas will reproduce
-reproductionRate = 1; %how fast amoebas reproduce(0.2 = 20% growth, 0 =
+reproductionRate = 5; %how fast amoebas reproduce(1.2 = 20% growth, 1.0 =
                         % 0% growth).
 
 
 %MAY NEED SOME OF THESE DIFFUSION CONSTANTS FOR CHEMICAL SIGNALING
 % r = 0.05; % Diffusion Constant
 % coolingRate = 0.2; % Cooling Constant
-numAmoebas = 10; %number of total amoebas
+numAmoebas = 50; %number of total amoebas
 amoebasPerCell = 1; %number of amoebes per section
 numClusters = numAmoebas/amoebasPerCell; %number of clusters started with
  
@@ -39,9 +39,9 @@ extEnvironmentList = zeros(rows+2, columns+2, numIterations);
 clusterPosList = zeros(numClusters,2,numIterations);  
 clusterSizeList= zeros(numClusters,numIterations);
 
-food = 500; % Starting amount of food in the environment
+food = 2000; % Starting amount of food in the environment
 starvationThreshold = 150; % Food level at which clusters start to clump
-foodDecayRate = 0.5;
+foodDecayRate = 1;
 foodList = 1:numIterations;
 foodList(1) = food;
 
@@ -95,11 +95,9 @@ for i = 2:numIterations
         clusterSizeList(j,i)=clusterSize;
         environment(clusterPos(1), clusterPos(2)) = 0;
         
-        %check if it is a reproduction iteration
-        if rem(i,reproductionTime)==0 && food > starvationThreshold 
-            numAmoebas = numAmoebas + reproductionRate *clusterSize;
-            clusterSize = clusterSize + reproductionRate *clusterSize;
-            disp(clusterSize)
+         if rem(i,reproductionTime)==0 %check if it is a reproduction iteration
+            clusterSize = reproductionRate *clusterSize;
+            disp("reproduced")
          end
         
         %if there are neighbors that are ameobas combine with them
@@ -146,7 +144,7 @@ for i = 2:numIterations
         
     end
     %update current food and food variable list
-    food = cast(food - (numAmoebas * foodDecayRate),"uint8");
+    food = cast(food - (aliveClusters * foodDecayRate),"uint8");
     foodList(i) = food;
     
     %update environments lists
@@ -155,7 +153,7 @@ for i = 2:numIterations
 
 end
  
-show_CA_List(environmentList, numClusters, clusterPosList,clusterSizeList,...
+show_CA_List(environmentList, numAmoebas, clusterPosList,clusterSizeList,...
     rows,columns,1, foodList);
 
 %function to find closet cluster for starvation
