@@ -108,12 +108,12 @@ for i = 2:numIterations
     %set enviorments properly for current iteration
     environment = environmentList(:,:,i-1);
     extEnvironment = extEnvironmentList(:,:,i-1);
-    disp(aliveClusters)
    
    
-    %cycle through each cluster and move them accordingly accordingly
+   
+    %cycle through each cluster and move them accordingly
     for j = 1:numClusters
-        %set position and cluster sizeusing clusterPosList which keeps
+        %set position and cluster size using clusterPosList which keeps
         %track of each cluster and it's current position
         clusterPos = clusterPosList(j,:,i-1);
 

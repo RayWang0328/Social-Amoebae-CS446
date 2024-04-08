@@ -5,7 +5,10 @@
 % Clustering occurs only when amoebas are randomly located next to one
 % another. Does not yet use biologically significant visualization. 
 
-%the sizes of our cellular automata grid
+%sets the size of the CA environment- how many grid squares by how many
+%grid squares. Each grid square in the simulation represents 36,000
+%micrometers, or, 3.6 cm based on reproduction timelines and amoeba
+%movements. 
 rows = 20; 
 columns = 20;
 
