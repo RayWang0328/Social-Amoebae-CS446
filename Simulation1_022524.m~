@@ -1,14 +1,9 @@
 % Emmett Smith, Ray Wang, MJ Pennington
 % CS346 
 % Fall, 2023
-% This simulation is our initial attempt at amoeba random movements.
-% Clustering occurs only when amoebas are randomly located next to one
-% another. Does not yet use biologically significant visualization. 
+% This simulation is our initial attempt at amoeba random movements
 
-%sets the size of the CA environment- how many grid squares by how many
-%grid squares. Each grid square in the simulation represents 36,000
-%micrometers, or, 3.6 cm based on reproduction timelines and amoeba
-%movements. 
+%the sizes of our cellular automata grid
 rows = 20; 
 columns = 20;
 
@@ -150,58 +145,43 @@ for i = 2:numIterations
             %assign random movement using indexMapping array
             clusterMove = indexMapping{indsa};
             
-            %update cluster position to reflect this movement
+            %update cluster position to 
             clusterPos = [max(min(clusterPos(1) + clusterMove(1), rows), minRows), ...
                         max(min(clusterPos(2) + clusterMove(2), columns), minCols)];
                     
-            %update relevant variables:
-            
-            %change environment cell in grid to reflect the size of the
-            %cluster it holds
+            %update relevant variables
             environment(clusterPos(1), clusterPos(2)) = clusterSize; 
-            
-            %update the extended environment to contain the environment
             extEnvironment(2:rows+1, 2:columns+1) = environment;
-           
-            %update the cluster position list to contain the new cluster
-            %position after movement
+            disp(environment(clusterPos(1), clusterPos(2)))
             clusterPosList(j,:,i)= clusterPos;
             
         end
         
     end
-
-    %add the updated environment to the environmentList
-    environmentList(:,:,i) = environment;
     
-    %add the updated extended environment to the extended environment list.
+%     disp(environment)
+%     w=waitforbuttonpress;
+    environmentList(:,:,i) = environment;
     extEnvironmentList(:,:,i) = extEnvironment;
 
 end
  
-
-%feeds the environment List, number of Amoebas, cluster position list,
-%rows, columns and interval to the function show_CA_list for visualization
-%of our simulation
 show_CA_List(environmentList, numAmoebas, clusterPosList,rows,columns,1);
 
-%a functon for visualizing each frame in the simulation> 
+    
 function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,rows,columns,interval)
 
     for i=1:interval:length(environmentList)
-        %for each frame in the simulation, determine the environment at
-        %that time step
         environment = environmentList(:,:,i);
         hold on;
 
-        % Display the environment 
+        % Display the heat map
         imagesc(environment);
-        colormap('hot'); % this colormap is updated in a future rendition 
-        %of our visualization to better reflect biological factors
+        colormap('hot'); % use a colormap suitable for heatmaps
         colorbar; % optional: display a colorbar indicating temperature values
         
        
-        % Plot clusters positions on top of the environment
+        % Plot mammals positions on top of the heat map
         for m = 1:numAmoebas
             rectangle('Position', [amoebasPosList(m,2,i)-0.5,...
                     amoebasPosList(m,1,i)-0.5, 1, 1], 'FaceColor', 'g', ...
