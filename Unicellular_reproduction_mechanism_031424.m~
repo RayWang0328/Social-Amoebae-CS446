@@ -161,10 +161,6 @@ for i = 2:numIterations
             neighbors(5) = []; % remove the clusters original position
             
             [maxNeighborSize, index] = max(neighbors);% find which direction to go
-            %scan through the array of neighbors and identify the one with
-            %the largest cluster size
-            
-            
             clusterMove = indexMapping{index};
             
             %get size of the neighboring cluster and combine the two
