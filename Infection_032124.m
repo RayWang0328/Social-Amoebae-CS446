@@ -108,10 +108,11 @@ for i = 2:numIterations
         clusterInfected = clusterCharacteristics(j,4,i-1);
 
         environment(clusterPos(1), clusterPos(2)) = 0;
-        extEnvironment(clusterPos(1), clusterPos(2)) = 0;
+        extEnvironment(2:rows+1, 2:columns+1) = environment;
         neighbors = reshape(extEnvironment(clusterPos(1)+1-1:...
                 clusterPos(1)+1+1,clusterPos(2)-1+1:clusterPos(2)+1+1)...
                 ,1,[]);
+
         
 %          if rem(i,reproductionTime)==0 %check if it is a reproduction iteration
 %             clusterSize = round(reproductionRate *clusterSize);
@@ -131,8 +132,7 @@ for i = 2:numIterations
             
             %update cluster size from max neighbor
             clusterSize = maxNeighborSize + clusterSize;
-            
-            
+
         
             %get size of the neighboring cluster and combine the two
             neighborPos= [clusterPos(1)+clusterMove(1),clusterPos(2)+...
@@ -142,20 +142,24 @@ for i = 2:numIterations
             %find number of infected
             rowIndex = find(ismember(clusterPositions,neighborPos, 'rows'));   
             clusterInfected = clusterInfected + clusterCharacteristics...
-                (rowIndex,4,i-1);
+                (rowIndex(1),4,i-1);
 
             fprintf("Cluster Pos: %d, %d\n",clusterPos(1),clusterPos(2))
             fprintf("Neighbor Pos: %d, %d\n",neighborPos(1),neighborPos(2))
-            fprintf("Row Index: %d\n\n", rowIndex)
+            fprintf("Row Index: %d\n\n", rowIndex(1))
             
             
             %move comined cluster off the screen and remove from simulation 
             clusterCharacteristics(j,1:2,i)= [0,0];
             clusterPositions(j,:) = [0,0];
             
-            fprintf("Cluster Size: %d, Cluster Inf: %d\n",clusterSize,clusterInfected)
-            clusterCharacteristics(rowIndex,3:4,i)=[clusterSize,clusterInfected];
-
+            fprintf("Cluster Size: %d, Cluster Inf: %d\n",...
+                clusterSize,clusterInfected)
+            clusterCharacteristics(rowIndex(1),3:4,i-1)=...
+                [clusterSize,clusterInfected];
+            fprintf("Updated Cluster Size: %d, UpdatedCluster Inf: %d\n",...
+                clusterCharacteristics(rowIndex(1),3,i-1),...
+                clusterCharacteristics(rowIndex(1),4,i-1))
 
             aliveClusters = aliveClusters - 1;
         else
@@ -188,8 +192,11 @@ for i = 2:numIterations
     %update enviorment with new cluster sizes
     for j = 1:numClusters
         if(clusterCharacteristics(j,1,i) ~= 0)
-        environment(clusterCharacteristics(j,1,i),...
-            clusterCharacteristics(j,2,i)) = clusterCharacteristics(j,3,i);
+            environment(clusterCharacteristics(j,1,i),...
+                clusterCharacteristics(j,2,i)) = ...
+                clusterCharacteristics(j,3,i) + ...
+                environment(clusterCharacteristics(j,1,i),...
+                clusterCharacteristics(j,2,i));
         end
     end
     extEnvironment(2:rows+1, 2:columns+1) = environment;
