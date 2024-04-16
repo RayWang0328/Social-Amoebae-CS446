@@ -1,9 +1,19 @@
 % Emmett Smith, Ray Wang, MJ Pennington
 % CS346 
 % Spring 2024
-%
+%This simulation updates our previous simulation (Simulation 2) by not only
+%visualizing clustering at a certain starvation threshold, but also having
+%amoebas reproduce asexually at a prescribed iteration. This is simulated
+%by having cluster sizes double at that iteration (the number of amoebas in
+%a given 3.6cm grid space in the environment has doubled due to
+%reproduction.)
 
  
+
+%sets the size of the CA environment- how many grid squares by how many
+%grid squares. Each grid square in the simulation represents 36,000
+%micrometers, or, 3.6 cm based on reproduction timelines and amoeba
+%movements. 
 rows = 30; 
 columns = 30;
 
@@ -12,49 +22,66 @@ minRows = 2;
 minCols = 2;
 
 % set simulation's duration and variables
-numIterations = 200;
+numIterations = 200; %number of iterations of the simulation
 x = 1:rows;
 y = 1:columns;
  
-neighborhoodSize = 8; % size of neighborhood
+neighborhoodSize = 8; % size of neighborhood (an 8 cell neighborhood is a 
+%moore neighborhood that includes all adjacent neighbors)
 
 reproductionTime=2; % every 10 frames amoebas will reproduce
 reproductionRate = 5; %how fast amoebas reproduce(1.2 = 20% growth, 1.0 =
                         % 0% growth).
 
 
-%MAY NEED SOME OF THESE DIFFUSION CONSTANTS FOR CHEMICAL SIGNALING
-% r = 0.05; % Diffusion Constant
-% coolingRate = 0.2; % Cooling Constant
-numAmoebas = 10; %number of total amoebas
-amoebasPerCell = 1; %number of amoebes per section
+numAmoebas = 50; %number of total amoebas
+amoebasPerCell = 1; %number of amoebes per grid visualization
 numClusters = numAmoebas/amoebasPerCell; %number of clusters started with
  
 environment =  zeros(rows, columns); % natural environment
 extEnvironment = zeros(rows+2, columns+2); % environment with bounds
 
+
+
 %create lists to update information through out simulation
-environmentList = zeros(rows, columns, numIterations);
-extEnvironmentList = zeros(rows+2, columns+2, numIterations);
-clusterPosList = zeros(numClusters,2,numIterations);  
-clusterSizeList= zeros(numClusters,numIterations);
+
+environmentList = zeros(rows, columns, numIterations); %contains each cell 
+        % of the environment
+        
+extEnvironmentList = zeros(rows+2, columns+2, numIterations);%contains the
+        %environment and its boundaries
+        
+clusterPosList = zeros(numClusters,2,numIterations); %keeps track of the 
+        %number of clusters and their positions for visualizations
+        
+        
+clusterSizeList= zeros(numClusters,numIterations);%keeps track of all of 
+        %the cluster sizes throughout the simulation (corresponds to
+        %clusterPosList)
 
 food = 500; % Starting amount of food in the environment
 starvationThreshold = 150; % Food level at which clusters start to clump
-foodDecayRate = 0.5;
-foodList = 1:numIterations;
-foodList(1) = food;
+foodDecayRate = 1;  %how quickly food is being consumed on every iteration
+foodList = 1:numIterations;%keeps track of how much food is available at 
+        %each step in the simulation
+foodList(1) = food; %sets the first value in the foodList equal to the 
+                    %starting amount of food
 
-aliveClusters = numAmoebas;
+aliveClusters = numAmoebas;%sets a value for the number of amoebas who are 
+        %alive (all amoebas are alive at the beginning of the simulation)
 
-% initialize position and size of amoeba clusters
+
+% initialize position and size of amoeba clusters randomly
 for i = 1:numClusters
     clusterPos = [randi([1 rows]) randi([1 columns])];
     environment(clusterPos(1), clusterPos(2)) = amoebasPerCell;
     clusterPosList(i,:,1) = clusterPos;
 end
 
-extEnvironment(2:rows+1, 2:columns+1) = environment;
+extEnvironment(2:rows+1, 2:columns+1) = environment;%initialize the 
+        %extended environment to contain the updated environment with
+        %initial clusters
+        
  
 % COULD BE USED TO MOVE AMOEBAS TOWARDS OTHERS
 % moveTowards= @(targetPos, currentPos)(currentPos + sign(targetPos - ...
@@ -65,14 +92,18 @@ extEnvironment(2:rows+1, 2:columns+1) = environment;
 environmentList(:,:,1) = environment;
 extEnvironmentList(:,:,1) = extEnvironment;
 
-%find the sum of the neighbors
+
+%this function adds up the value of all of the neighbors in a moore
+%neighborhood based on the position of a cell (x,y)
 sumNeighbors = @(x, y, extEnvironment) (extEnvironment(x+1-1, y+1-1) + ...
     extEnvironment(x+1-1, y+1) + extEnvironment(x+1-1, y+1+1) + ...
     extEnvironment(x+1, y+1-1) + extEnvironment(x+1, y+1+1) + ...
     extEnvironment(x+1+1, y+1-1) + extEnvironment(x+1+1, y+1) + ...
     extEnvironment(x+1+1, y+1+1));
 
-%Indexs for moving Amoeba clusters
+%Indexs for moving Amoeba clusters- keeps track of movements to access each
+%neighbor in a moore neighborhood i.e. to get to the first neighbor a
+%cluster would move -1 in the x direction and -1 in the y direction
 indexMapping ={[-1 -1], [0 -1], [1 -1], [-1 0], [1 0], [-1 1],[0 1],[1 1]};
 
  
@@ -85,24 +116,42 @@ for i = 2:numIterations
     
     %cycle through each cluster and move them accordingly accordingly
     for j = 1:numClusters
-        %set position and cluster size
+        %set position and cluster size using clusterPosList which keeps
+        %track of each cluster and it's current position
         clusterPos = clusterPosList(j,:,i-1);
 
-        if(clusterPos == [0,0])
+        if(clusterPos == [0,0])%this causes the simulation to ignore 
+            %clusters that have been removed from the environment after
+            %combining with others
              continue;
         end
         clusterSize = environment(clusterPos(1), clusterPos(2));
+         %stores the size of the cluster based on environment information
+        
+         
         clusterSizeList(j,i)=clusterSize;
+          %adds the size of the cluster to the clusterSizeList (helps us keep
+           %track of cluster sizes at each iteration of the simulation)
+        
+        
         environment(clusterPos(1), clusterPos(2)) = 0;
+        %empties the previous location of the cluster and sets its value in
+        %the environment back to 0 (there is no longer a cluster there)
         
-        %check if it is a reproduction iteration
-        if rem(i,reproductionTime)==0 && food > starvationThreshold 
-            numAmoebas = numAmoebas + reproductionRate *clusterSize;
-            clusterSize = clusterSize + reproductionRate *clusterSize;
-            disp(clusterSize)
+         if rem(i,reproductionTime)==0 %check if it is a reproduction iteration
+             %based on remainders from the iteration number of the
+             %simulation(i) and the prescribed reproduction time
+             
+            clusterSize = reproductionRate *clusterSize; %increase clusterSizes 
+            %based on the reproductionRate prescribed at the top
+           
          end
+         
+         
         
-        %if there are neighbors that are ameobas combine with them
+        %if there are neighbors that are ameobas combine with them- use
+        %sumNeighbors function to determine if neighbors values are greater
+        %than 0 (empty)
         if sumNeighbors(clusterPos(1),clusterPos(2),extEnvironment) > 0 &&...
              food < starvationThreshold
             %get neighbors and shape into 1d array
@@ -112,6 +161,10 @@ for i = 2:numIterations
             neighbors(5) = []; % remove the clusters original position
             
             [maxNeighborSize, index] = max(neighbors);% find which direction to go
+            %scan through the array of neighbors and identify the one with
+            %the largest cluster size
+            
+            
             clusterMove = indexMapping{index};
             
             %get size of the neighboring cluster and combine the two
