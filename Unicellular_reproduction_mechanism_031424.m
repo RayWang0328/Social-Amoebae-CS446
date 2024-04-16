@@ -114,7 +114,7 @@ for i = 2:numIterations
     extEnvironment = extEnvironmentList(:,:,i-1);
     
     
-    %cycle through each cluster and move them accordingly accordingly
+    %cycle through each cluster and move them accordingly 
     for j = 1:numClusters
         %set position and cluster size using clusterPosList which keeps
         %track of each cluster and it's current position
@@ -164,7 +164,7 @@ for i = 2:numIterations
             %scan through the array of neighbors and identify the one with
             %the largest cluster size
             
-            
+            %assign random movement using indexMapping array
             clusterMove = indexMapping{index};
             
             %get size of the neighboring cluster and combine the two
@@ -172,7 +172,7 @@ for i = 2:numIterations
                 clusterMove(2)) = maxNeighborSize + clusterSize;
             extEnvironment(2:rows+1, 2:columns+1) = environment;
             
-            %move comined cluster off the screen and remove from simulation 
+            %move combined cluster off the screen and remove from simulation 
              clusterPosList(j,:,i)= [0,0];
              aliveClusters = aliveClusters - 1;
         else
@@ -207,11 +207,17 @@ for i = 2:numIterations
     extEnvironmentList(:,:,i) = extEnvironment;
 
 end
- 
-show_CA_List(environmentList, numClusters, clusterPosList,clusterSizeList,...
+
+
+%feeds the environment List, number of Amoebas, cluster position list,
+%rows, columns and interval to the function show_CA_list for visualization
+%of our simulation
+show_CA_List(environmentList, numAmoebas, clusterPosList,clusterSizeList,...
     rows,columns,1, foodList);
 
-%function to find closet cluster for starvation
+%function to find closet cluster for starvation clustering mechanisms
+%reads in the current cluster position, the list of cluster positions in
+%the simulation and the current iteration of the simulation: 
 function closestMove = findClosestCluster(clusterPos, clusterPosList, ...
     currentIteration)
     %Set min distance to largest int and direction that cluster should move
@@ -237,14 +243,20 @@ function closestMove = findClosestCluster(clusterPos, clusterPosList, ...
     end
 end
 
+
+%a functon for visualizing each frame in the simulation> 
 function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,...
     clusterSizeList,rows,columns,interval, foodList)
 
     for i=1:interval:length(environmentList)
+        %for each frame in the simulation, determine the environment at
+        %that time step
         environment = environmentList(:,:,i);
         hold on;
 
-       %map to set colors for legend
+       %map to set colors for legend. This visualizes increasing density of
+       %amoeba clusters where 0 is an empty cell and increasing
+       %clusterSizes have increasing shades of green
         map=[ 0.478 0.318 0.102
              0.478 0.318 0.102
              0,.9,0
@@ -263,7 +275,11 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,...
         %more set up for legend
         caxis([0,12]);
         lifeCycleColors=colorbar;
-        lifeCycleColors.Ticks=[1,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5];   
+        
+        %set ticks for better colorbar visualization
+        lifeCycleColors.Ticks=[1,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5]; 
+        
+        %label ticks to reflect the sizes of visualized clusters
         lifeCycleColors.TickLabels={'empty','1 amoeba','2 amoeba cluster',...
             '3 amoeba cluster','4 amoeba cluster','5 amoeba cluster',...
             '6 amoeba cluster','7 amoeba cluster','8 amoeba cluster',...
@@ -272,13 +288,16 @@ function [ ] = show_CA_List(environmentList,numAmoebas,amoebasPosList,...
         
         
        
-        % Plot mammals positions on top of the heat map
+        % Plot cluster positions on top of the heat map
         for m = 1:numAmoebas
             
+            %if the cluster at this point contains amoebas (is not 0)
             if (1-clusterSizeList(m,i)*.1)>0
-                greencolor=1-clusterSizeList(m,i)*.1;
+                greencolor=1-clusterSizeList(m,i)*.1;%determine the 
+                %green concentration to be visualized 
       
-            else greencolor=0; 
+            else greencolor=0; %if no amoebas are available at this cluster,
+                %visualize the cluster with 0 green color
             end
                 
             
