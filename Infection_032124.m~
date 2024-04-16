@@ -12,7 +12,7 @@ minRows = 2;
 minCols = 2;
 
 % set simulation's duration and variables
-numIterations = 15;
+numIterations = 10;
 x = 1:rows;
 y = 1:columns;
  
@@ -30,9 +30,9 @@ numAmoebas = 50; %number of total amoebas
 amoebasPerCell = 5; %number of amoebes per section
 numClusters = numAmoebas/amoebasPerCell; %number of clusters started with
 
-percentInfected = 0.2; %sets what proportion of amoebas are infected 0.0-1
-numInfectedClusters = round(percentInfected*numClusters); %calculate number 
-                                                      %of infected clusters
+percentInfected = 0.2; %sets what proportion of amoebas are infected 0-1
+%calculate number of infected clusters.
+numInfectedClusters = round(percentInfected*numClusters);
  
 environment =  zeros(rows, columns); % natural environment
 extEnvironment = zeros(rows+2, columns+2); % environment with bounds
@@ -61,7 +61,7 @@ for i = 1:numClusters
     environment(clusterPos(1), clusterPos(2)) = amoebasPerCell;
     clusterCharacteristics(i,1:2,1) = clusterPos;
     
-    %set number of infected clusters, all amoebas in Cell will be infected
+    %set number of infected clusters
     if i<=numInfectedClusters
         clusterCharacteristics(i,3:4,1) = [amoebasPerCell,amoebasPerCell];
     else
@@ -69,7 +69,6 @@ for i = 1:numClusters
     end
 end
 
-%update extended enviorment
 extEnvironment(2:rows+1, 2:columns+1) = environment;
 
 
@@ -95,9 +94,8 @@ for i = 2:numIterations
     extEnvironment = extEnvironmentList(:,:,i-1);
     clusterPositions = clusterCharacteristics(:,1:2,i-1);
     
-    %display for validation
-%     fprintf("Iteration %d:\n",i)
-%     disp(clusterCharacteristics(:,:,i-1))
+    fprintf("Iteration %d:\n",i)
+    disp(clusterCharacteristics(:,:,i-1))
     %cycle through each cluster and move them accordingly accordingly
     for j = 1:numClusters
         %set position and cluster size
@@ -106,71 +104,57 @@ for i = 2:numIterations
         if(clusterPos == [0,0])
              continue;
         end
-        
-        %get current characteristics of cluster
         clusterSize = clusterCharacteristics(j,3,i-1);
         clusterInfected = clusterCharacteristics(j,4,i-1);
-        
-        %set grid element in enviorment to be zero to show amoeabas have
-        %moved
+
         environment(clusterPos(1), clusterPos(2)) = 0;
-        extEnvironment(2:rows+1, 2:columns+1) = environment;
- 
+        extEnvironment(clusterPos(1), clusterPos(2)) = 0;
         
 %          if rem(i,reproductionTime)==0 %check if it is a reproduction iteration
 %             clusterSize = round(reproductionRate *clusterSize);
 %             clusterInfected = round(reproductionRate *clusterInfected);
 %          end
         
-        %if there are neighbors that are ameobas, and below the starvation
-        %threshold then combine with neighbors
+        %if there are neighbors that are ameobas combine with them
         if sumNeighbors(clusterPos(1),clusterPos(2),extEnvironment) > 0 &&...
              food < starvationThreshold
-         
             %get neighbors and shape into 1d array
             neighbors = reshape(extEnvironment(clusterPos(1)+1-1:...
                 clusterPos(1)+1+1,clusterPos(2)-1+1:clusterPos(2)+1+1)...
                 ,1,[]);
-            neighbors(5) = []; % remove the clusters original position
-            
-            % find which direction to go and size of largest neighbor
-            [maxNeighborSize, index] = max(neighbors);
+            %neighbors(5) = []; % remove the clusters original position
+            disp(neighbors)
+            [maxNeighborSize, index] = max(neighbors);% find which direction to go
             clusterMove = indexMapping{index};
             
-            %Display for 
-%             fprintf("Original Cluster Size: %d, Original Cluster Inf: %d\n",...
-%                 clusterSize,clusterInfected)
+            %update cluster size from max neighbor
+            clusterSize = maxNeighborSize + clusterSize;
             
-
-            %get size of the neighboring cluster
+            
+        
+            %get size of the neighboring cluster and combine the two
             neighborPos= [clusterPos(1)+clusterMove(1),clusterPos(2)+...
                 clusterMove(2)];
-         
+            
 
-            %find neighbor index in clusterPositions
-            rowIndex = find(ismember(clusterPositions,neighborPos, 'rows'));
-            
-            %update the clusterSize and number of infected once combined
-            clusterSize = maxNeighborSize + clusterSize;
+            %find number of infected
+            rowIndex = find(ismember(clusterPositions,neighborPos, 'rows'));   
             clusterInfected = clusterInfected + clusterCharacteristics...
-                (rowIndex(1),4,i-1);
-            
-            %print out for validation
-%             fprintf("Cluster Pos: %d, %d\n",clusterPos(1),clusterPos(2))
-%             fprintf("Neighbor Pos: %d, %d\n",neighborPos(1),neighborPos(2))
-%             fprintf("Row Index: %d\n\n", rowIndex(1))
+                (rowIndex,4,i-1);
+
+            fprintf("Cluster Pos: %d, %d\n",clusterPos(1),clusterPos(2))
+            fprintf("Neighbor Pos: %d, %d\n",neighborPos(1),neighborPos(2))
+            fprintf("Row Index: %d\n\n", rowIndex)
             
             
             %move comined cluster off the screen and remove from simulation 
             clusterCharacteristics(j,1:2,i)= [0,0];
             clusterPositions(j,:) = [0,0];
+            disp(clusterPositions)
             
-            %update the neighbor to show the combined size and infection
-            clusterCharacteristics(rowIndex(1),3:4,i-1)=...
-                [clusterSize,clusterInfected];
-            fprintf("Updated Cluster Size: %d, UpdatedCluster Inf: %d\n\n",...
-                clusterCharacteristics(rowIndex(1),3,i-1),...
-                clusterCharacteristics(rowIndex(1),4,i-1))
+            if rowIndex ~= []
+                clusterCharacteristics(rowIndex,3:4,i)=[clusterSize,clusterInfected];
+            end
 
             aliveClusters = aliveClusters - 1;
         else
@@ -203,11 +187,8 @@ for i = 2:numIterations
     %update enviorment with new cluster sizes
     for j = 1:numClusters
         if(clusterCharacteristics(j,1,i) ~= 0)
-            environment(clusterCharacteristics(j,1,i),...
-                clusterCharacteristics(j,2,i)) = ...
-                clusterCharacteristics(j,3,i) + ...
-                environment(clusterCharacteristics(j,1,i),...
-                clusterCharacteristics(j,2,i));
+        environment(clusterCharacteristics(j,1,i),...
+            clusterCharacteristics(j,2,i)) = clusterCharacteristics(j,3,i);
         end
     end
     extEnvironment(2:rows+1, 2:columns+1) = environment;
