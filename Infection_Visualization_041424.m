@@ -253,18 +253,18 @@ function [ ] = show_CA_List(environmentList,numAmoebas,clusterCharacteristics,..
         hold on;
 
        %map to set colors for legend
-        map=[ 0.478 0.318 0.102
-             0.478 0.318 0.102
-             0,.9,0
-             0,.8,0
-             0,.7,0
-             0,.6,0
-             0,.5,0
-             0,.4,0
-             0,.3,0
-             0,.2,0
-             0,.1,0
-             0,0,0];
+        map=[ 1 1 1
+             1 1 1
+             1,1,1
+             .9,0,0
+             .8,0,0
+             .7,0,0
+             .6,0,0
+             .5,0,0
+             .4,0,0
+             .3,0,0
+             .2,0,0
+             .1,0,0];
         imagesc(environment);
         colormap(map);
         
@@ -272,10 +272,10 @@ function [ ] = show_CA_List(environmentList,numAmoebas,clusterCharacteristics,..
         caxis([0,12]);
         lifeCycleColors=colorbar;
         lifeCycleColors.Ticks=[1,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5];   
-        lifeCycleColors.TickLabels={'empty','1 amoeba','2 amoeba cluster',...
-            '3 amoeba cluster','4 amoeba cluster','5 amoeba cluster',...
-            '6 amoeba cluster','7 amoeba cluster','8 amoeba cluster',...
-            '9 amoeba cluster','10+ amoeba cluster'};
+        lifeCycleColors.TickLabels={'empty','0 infected amoeba','1 infected amoeba ',...
+            '2 infected amoeba','3 infected amoeba','4 infected amoeba',...
+            '5 infected amoeba','6 infected amoeba','7 infected amoeba',...
+            '8 infected amoeba','9+ infected amoeba'};
          hold;
         
         
@@ -283,16 +283,24 @@ function [ ] = show_CA_List(environmentList,numAmoebas,clusterCharacteristics,..
         % Plot mammals positions on top of the heat map
         for m = 1:numAmoebas
             
-            if (1-clusterCharacteristics(m,3,i)*.1)>0
-                greencolor=1-clusterCharacteristics(m,3,i)*.1;
+            greencolor=0;
+            bluecolor=0;
+            
+            if (1-clusterCharacteristics(m,4,i)*.1)>0 && (1-clusterCharacteristics(m,4,i))~=1
+                redcolor=1-clusterCharacteristics(m,4,i)*.1;
+                fprintf("RedColor: %d \n Infected: %d",redcolor,clusterCharacteristics(m,3,i))
       
-            else greencolor=0; 
+            elseif (1-clusterCharacteristics(m,4,i))==1
+                redcolor=1;
+                greencolor=1;
+                bluecolor=1;
+            else redcolor=0; 
             end
                 
             
             rectangle('Position', [clusterCharacteristics(m,2,i)-0.5,...
                     clusterCharacteristics(m,1,i)-0.5, 1, 1], 'FaceColor',...
-                    [0,greencolor,0],'EdgeColor', 'k');
+                    [redcolor,greencolor,bluecolor],'EdgeColor', 'k');
                 
         end    
            
