@@ -97,7 +97,7 @@ for i = 2:numIterations
 %     fprintf("Iteration %d:\n",i)
 %     disp(clusterCharacteristics(:,:,i-1))
     %cycle through each cluster and move them accordingly accordingly
-    for j = 1:numClusters
+    for j = 1:aliveClusters
         %set position and cluster size
         clusterPos = oldClusterPos(j,:);
  
