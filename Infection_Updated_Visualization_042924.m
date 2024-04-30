@@ -286,23 +286,23 @@ function [ ] = show_CA_List(environmentList,numAmoebas,...
 
        %map to set colors for legend
         redMap=[ 1 1 1
-             .1,0,0
-             .15,0,0
-             .2,0,0
-             .25,0,0
-             .3,0,0
-             .35,0,0
-             .4,0,0
-             .45,0,0
-             .5,0,0
-             .55,0,0
-             .6,0,0
-             .65,0,0
-             .7,0,0
-             .75,0,0
-             .8,0,0
+             .9,0,0
              .85,0,0
-             .9,0,0];
+             .8,0,0
+             .75,0,0
+             .7,0,0
+             .65,0,0
+             .6,0,0
+             .55,0,0
+             .5,0,0
+             .45,0,0
+             .4,0,0
+             .35,0,0
+             .3,0,0
+             .25,0,0
+             .2,0,0
+             .15,0,0
+             .1,0,0];
          
          
          greenMap=[ 1 1 1
@@ -373,8 +373,8 @@ function [ ] = show_CA_List(environmentList,numAmoebas,...
 
         
         hold on;
-        subplot(1,2,2); 
-        colormap(subplot(1,2,2),greenMap); 
+        colormap(subplot(1,2,2),greenMap);
+        subplot(1,2,2);  
         imagesc(sizeEnvironment);
         caxis([0,19]);
         colorbar;
