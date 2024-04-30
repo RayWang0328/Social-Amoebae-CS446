@@ -15,6 +15,8 @@ minCols = 2;
 numIterations = 30;
 x = 1:rows;
 y = 1:columns;
+
+integerVisualization=1;
  
 neighborhoodSize = 8; % size of neighborhood
 
@@ -202,7 +204,7 @@ for i = 2:numIterations
 end
  
 show_CA_List(environmentList, numClusters,...
-    rows,columns,1, foodList);
+    rows,columns,1, foodList,integerVisualization);
 
 %getter and setter methods for cluster size and infection
 function clusterSize = getClusterSize(row,col, environment)
@@ -274,7 +276,7 @@ end
 %don't think you need cluster characteristics should just need the environment
 % take enviroment list and cycle through it using 
 function [ ] = show_CA_List(environmentList,numAmoebas,...
-    rows,columns,interval, foodList)
+    rows,columns,interval, foodList,integerVisualization)
 
     for i=1:interval:length(environmentList)
         environment = environmentList{i};
@@ -304,33 +306,33 @@ function [ ] = show_CA_List(environmentList,numAmoebas,...
          
          
          greenMap=[ 1 1 1
-              0,.1,0
-              0,.15,0
-              0,.2,0
-              0,.25,0
-              0,.3,0
-              0,.35,0
-              0,.4,0
-              0,.45,0
-              0,.5,0
+              0,.9,0
+              0,.85,0
+              0,.8,0
+              0,.75,0
+              0,.7,0
+              0,.65,0
+              0,.6,0
               0,.55,0
               0,.5,0
-              0,.65,0
-              0,.7,0
-              0,.75,0
-              0,.8,0
-              0,.85,0
-              0,.9,0];
+              0,.45,0
+              0,.4,0
+              0,.35,0
+              0,.3,0
+              0,.25,0
+              0,.2,0
+              0,.15,0
+              0,.1,0];
          
  
-        
+        hold on;
         subplot(1,2,1); 
-        colormap(redMap); 
+        colormap(subplot(1,2,1),redMap); 
         imagesc(infectedEnvironment);
-        caxis([0,18]);
+        caxis([0,19]);
         colorbar;
         bar1=colorbar;
-        bar1.Ticks=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];   
+        bar1.Ticks=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19];   
         bar1.TickLabels={'empty','1 infected amoeba','2 infected amoeba ',...
             '3 infected amoeba','4 infected amoeba','5 infected amoeba',...
             '6 infected amoeba','7 infected amoeba','8 infected amoeba',...
@@ -339,19 +341,45 @@ function [ ] = show_CA_List(environmentList,numAmoebas,...
             '15 infected amoeba','16 infected amoeba','17 infected amoeba',...
             '18+ infected amoeba'};
         
+           for m = 1:size(infectedEnvironment)[1]
+                for j= 1:size(infectedEnvironment)[2]
+
+            
+                    if (infectedEnvironment(m,j)==0 && sizeEnvironment(m,j)>0)
+                        subplot(1,2,1);
+                        rectangle('Position', [j-0.5,m-0.5, 1, 1], 'FaceColor',...
+                        [1,1,1],'EdgeColor', 'k');
+            
+                    end
+                end       
+           end  
+           
+        for m = 1:size(infectedEnvironment, 1)
+            for j = 1:size(infectedEnvironment, 2)
+                    if integerVisualization==1
+                    text(j, m, num2str(infectedEnvironment(m, j)),...
+                        'HorizontalAlignment', 'center', 'VerticalAlignment'...
+                        , 'middle', 'FontSize', 8, 'Color', 'k');
+                    end
+            end
+        end
+        
+        hold off;
         axis equal; axis tight; axis xy;
         xlim([0.5, rows + 0.5]);
         ylim([0.5, columns + 0.5]);
         title(sprintf('Infected Environment - Frame: %d, Food Available: %d', i, foodList(i)));
         set(gca,'YDir','reverse');
 
+        
+        hold on;
         subplot(1,2,2); 
-        colormap(greenMap); 
+        colormap(subplot(1,2,2),greenMap); 
         imagesc(sizeEnvironment);
-        caxis([0,12]);
+        caxis([0,19]);
         colorbar;
         bar2=colorbar;
-        bar2.Ticks=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];   
+        bar2.Ticks=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19];   
         bar2.TickLabels={'empty','1 amoeba','2 amoeba ',...
             '3 amoeba','4 amoeba','5 amoeba',...
             '6 amoeba','7 amoeba','8 amoeba',...
@@ -360,6 +388,20 @@ function [ ] = show_CA_List(environmentList,numAmoebas,...
             '15 amoeba','16 amoeba','17 amoeba',...
             '18+ amoeba'};
         
+       
+       for m = 1:size(sizeEnvironment, 1)
+            for j = 1:size(sizeEnvironment, 2)
+                if integerVisualization==1
+                    text(j, m, num2str(sizeEnvironment(m, j)), ...
+                        'HorizontalAlignment', 'center', 'VerticalAlignment'...
+                        , 'middle', 'FontSize', 8, 'Color', 'k');
+                end
+            end
+        end
+        
+        
+        
+        hold off;
         axis equal; axis tight; axis xy;
         xlim([0.5, rows + 0.5]);
         ylim([0.5, columns + 0.5]);
