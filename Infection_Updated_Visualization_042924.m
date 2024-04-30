@@ -182,7 +182,7 @@ for i = 2:numIterations
             %update infection and size
             environment = setClusterSize(clusterPos(1),clusterPos(2),...
                 clusterSize,environment);
-            environment = setClusterSize(clusterPos(1),clusterPos(2),...
+            environment = setInfected(clusterPos(1),clusterPos(2),...
                 clusterInfected,environment);
             
         end
@@ -278,8 +278,8 @@ function [ ] = show_CA_List(environmentList,numAmoebas,...
 
     for i=1:interval:length(environmentList)
         environment = environmentList{i};
-        infectedEnvironment=getInfectedEnvironment(environment)
-        sizeEnvironment=getSizeEnvironment(environment)
+        infectedEnvironment=getInfectedEnvironment(environment);
+        sizeEnvironment=getSizeEnvironment(environment);
         
 
        %map to set colors for legend
