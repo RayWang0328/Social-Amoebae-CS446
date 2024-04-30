@@ -16,14 +16,19 @@ end
 %environment2(2:6,2:6) = environment;
 environment = setClusterSize(2,1,50, environment);
 environment = setInfected(2,1,10, environment);
-environment2(2:6,2:6) = environment;
-neighbors = getNeighborSizes(1,1,environment2);
 
+%setting extEnviorment with regular environment inside of it
+environment2(2:6,2:6) = environment;
+
+neighbors = getNeighborSizes(1,1,environment2);
+disp(getSizeEnvironment(environment))
+disp(getInfectedEnvironment(environment))
 
 environmentList{1} = environment;
 environmentList{2} = environment2;
 
 disp(environmentList{2})
+
 
 
 function clusterSize = getClusterSize(row,col, environment)
@@ -53,5 +58,15 @@ function updatedCellArray = setInfected(row,col,infected, environment)
     updatedCellArray = environment;
 end
 
+function infectedEnvironment = getInfectedEnvironment(environment)
+    matrixEnvironment = cell2mat(environment);
+    [numRows,numCols] = size(matrixEnvironment);
+    infectedEnvironment = matrixEnvironment(:,2:2:numCols);
+end
 
+function infectedEnvironment = getSizeEnvironment(environment)
+    matrixEnvironment = cell2mat(environment);
+    [numRows,numCols] = size(matrixEnvironment);
+    infectedEnvironment = matrixEnvironment(:,1:2:numCols-1);
+end
 

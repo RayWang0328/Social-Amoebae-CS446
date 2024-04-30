@@ -131,7 +131,7 @@ for i = 2:numIterations
             [maxNeighborSize, index] = max(neighbors);
             clusterMove = indexMapping{index};
             
-            %Display for 
+            %Display for validation
 %             fprintf("Original Cluster Size: %d, Original Cluster Inf: %d\n",...
 %                 clusterSize,clusterInfected)
             
@@ -140,9 +140,6 @@ for i = 2:numIterations
             neighborPos= [clusterPos(1)+clusterMove(1),clusterPos(2)+...
                 clusterMove(2)];
          
-            %
-            %find neighbor index in clusterPositions
-            %rowIndex = find(ismember(clusterPositions,neighborPos, 'rows'));
             
             %update the clusterSize and number of infected once combined
             clusterSize = maxNeighborSize + clusterSize;
@@ -154,8 +151,7 @@ for i = 2:numIterations
 %             fprintf("Neighbor Pos: %d, %d\n",neighborPos(1),neighborPos(2))
 %             fprintf("Row Index: %d\n\n", rowIndex(1))
             
-            
-            
+
             
             %update the neighbor to show the combined size and infection
              environment = setClusterSize(neighborPos(1),...
@@ -181,7 +177,7 @@ for i = 2:numIterations
                 minRows), max(min(clusterPos(2) + clusterMove(2), columns), ...
                 minCols)];          
                 
-            
+            %update new position in position list
             newClusterPos= [newClusterPos; clusterPos];
             %update infection and size
             environment = setClusterSize(clusterPos(1),clusterPos(2),...
@@ -208,6 +204,7 @@ end
 show_CA_List(environmentList, numClusters, clusterCharacteristics,...
     rows,columns,1, foodList);
 
+%getter and setter methods for cluster size and infection
 function clusterSize = getClusterSize(row,col, environment)
     clusterSize = environment{row,col}(1);
 end
@@ -217,6 +214,11 @@ function neighbors = getNeighborSizes(row,col,extEnvironment)
      neighbors = reshape(matrixEnvironment(row-1+1:...
                 row+1+1,2*(col+1)-1-2:2:2*(col+1)-1+2),1,[]);
      neighbors(5) = [];
+end
+
+function infectedEnvironment = getInfectedEnvironment(environment)
+    matrixEnvironment = cell2mat(environment);
+    infectedEnvironment = matrixEnvironment(:,2:2:2*(columns));
 end
 
 function clusterInfected = getInfected(row,col,environment)
@@ -233,6 +235,17 @@ function updatedCellArray = setInfected(row,col,infected, environment)
     updatedCellArray = environment;
 end
 
+function infectedEnvironment = getInfectedEnvironment(environment)
+    matrixEnvironment = cell2mat(environment);
+    [numRows,numCols] = size(matrixEnvironment);
+    infectedEnvironment = matrixEnvironment(:,2:2:numCols);
+end
+
+function infectedEnvironment = getSizeEnvironment(environment)
+    matrixEnvironment = cell2mat(environment);
+    [numRows,numCols] = size(matrixEnvironment);
+    infectedEnvironment = matrixEnvironment(:,1:2:numCols-1);
+end
 
 %function to find closet cluster for starvation
 function closestMove = findClosestCluster(clusterPos, clusterPosList)
@@ -258,11 +271,13 @@ function closestMove = findClosestCluster(clusterPos, clusterPosList)
     end
 end
 
+%don't think you need cluster characteristics should just need the environment
+% take enviroment list and cycle through it using 
 function [ ] = show_CA_List(environmentList,numAmoebas,clusterCharacteristics,...
     rows,columns,interval, foodList)
 
     for i=1:interval:length(environmentList)
-        environment = environmentList(:,:,i);
+        environment = environmentList{i};
         hold on;
 
        %map to set colors for legend
@@ -293,7 +308,7 @@ function [ ] = show_CA_List(environmentList,numAmoebas,clusterCharacteristics,..
         
         
        
-        % Plot mammals positions on top of the heat map
+        % Plot amoebas positions on top of the  map
         for m = 1:numAmoebas
             
             greencolor=0;
