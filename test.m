@@ -1,33 +1,39 @@
-environment = repmat({zeros(1,2)},5,5); % natural environment
+environment = repmat({zeros(1,2)},5,5); % this how to create environment
 % environment2 = cell(7,7);
-environment2 = repmat({zeros(1,2)},7,7);
+environment2 = repmat({zeros(1,2)},7,7); % this how to create extended
+                                            %environment
 environmentList = cell(1,2);
+
+%new function to get neighbor sums
 sumNeighbors = @(x, y, extEnvironment) (extEnvironment{x+1-1, y+1-1}(1) + ...
     extEnvironment{x+1-1, y+1}(1) + extEnvironment{x+1-1, y+1+1}(1) + ...
     extEnvironment{x+1, y+1-1}(1) + extEnvironment{x+1, y+1+1}(1) + ...
     extEnvironment{x+1+1, y+1-1}(1) + extEnvironment{x+1+1, y+1}(1) + ...
     extEnvironment{x+1+1, y+1+1}(1));
 
+%how to initilize environments 
 for row = 1:5
    for col = 1:5
       environment{row,col} = [10 0];  
    end
 end
-%environment2(2:6,2:6) = environment;
+
+
+%testing set methods
 environment = setClusterSize(2,1,50, environment);
 environment = setInfected(2,1,10, environment);
 
 %setting extEnviorment with regular environment inside of it
 environment2(2:6,2:6) = environment;
 
+%testing getter methods
 neighbors = getNeighborSizes(1,1,environment2);
 disp(getSizeEnvironment(environment))
 disp(getInfectedEnvironment(environment))
 
+%how to set environmentlists
 environmentList{1} = environment;
 environmentList{2} = environment2;
-
-disp(environmentList{2})
 
 
 
