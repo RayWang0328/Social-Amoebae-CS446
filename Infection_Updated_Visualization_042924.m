@@ -273,8 +273,7 @@ function closestMove = findClosestCluster(clusterPos, clusterPosList)
     end
 end
 
-%don't think you need cluster characteristics should just need the environment
-% take enviroment list and cycle through it using 
+
 function [ ] = show_CA_List(environmentList,numAmoebas,...
     rows,columns,interval, foodList,integerVisualization)
 
@@ -282,52 +281,11 @@ function [ ] = show_CA_List(environmentList,numAmoebas,...
         environment = environmentList{i};
         infectedEnvironment=getInfectedEnvironment(environment);
         sizeEnvironment=getSizeEnvironment(environment);
-        
-
-       %map to set colors for legend
-        redMap=[ 1 1 1
-             .9,0,0
-             .85,0,0
-             .8,0,0
-             .75,0,0
-             .7,0,0
-             .65,0,0
-             .6,0,0
-             .55,0,0
-             .5,0,0
-             .45,0,0
-             .4,0,0
-             .35,0,0
-             .3,0,0
-             .25,0,0
-             .2,0,0
-             .15,0,0
-             .1,0,0];
-         
-         
-         greenMap=[ 1 1 1
-              0,.9,0
-              0,.85,0
-              0,.8,0
-              0,.75,0
-              0,.7,0
-              0,.65,0
-              0,.6,0
-              0,.55,0
-              0,.5,0
-              0,.45,0
-              0,.4,0
-              0,.35,0
-              0,.3,0
-              0,.25,0
-              0,.2,0
-              0,.15,0
-              0,.1,0];
-         
- 
         hold on;
+        
+        
         subplot(1,2,1); 
-        colormap(subplot(1,2,1),redMap); 
+        colormap(subplot(1,2,1),hsv); 
         imagesc(infectedEnvironment);
         caxis([0,19]);
         colorbar;
@@ -349,6 +307,10 @@ function [ ] = show_CA_List(environmentList,numAmoebas,...
                         subplot(1,2,1);
                         rectangle('Position', [j-0.5,m-0.5, 1, 1], 'FaceColor',...
                         [1,1,1],'EdgeColor', 'k');
+                    
+                        text(j, m, num2str(infectedEnvironment(m, j)),...
+                        'HorizontalAlignment', 'center', 'VerticalAlignment'...
+                        , 'middle', 'FontSize', 8, 'Color', 'k');
             
                     end
                 end       
@@ -356,7 +318,7 @@ function [ ] = show_CA_List(environmentList,numAmoebas,...
            
         for m = 1:size(infectedEnvironment, 1)
             for j = 1:size(infectedEnvironment, 2)
-                    if integerVisualization==1
+                    if (integerVisualization==1 && infectedEnvironment(m,j)~=0)
                     text(j, m, num2str(infectedEnvironment(m, j)),...
                         'HorizontalAlignment', 'center', 'VerticalAlignment'...
                         , 'middle', 'FontSize', 8, 'Color', 'k');
@@ -373,7 +335,7 @@ function [ ] = show_CA_List(environmentList,numAmoebas,...
 
         
         hold on;
-        colormap(subplot(1,2,2),greenMap);
+        colormap(subplot(1,2,2),parula);
         subplot(1,2,2);  
         imagesc(sizeEnvironment);
         caxis([0,19]);
@@ -391,7 +353,7 @@ function [ ] = show_CA_List(environmentList,numAmoebas,...
        
        for m = 1:size(sizeEnvironment, 1)
             for j = 1:size(sizeEnvironment, 2)
-                if integerVisualization==1
+                if (integerVisualization==1 && sizeEnvironment(m,j)~=0)
                     text(j, m, num2str(sizeEnvironment(m, j)), ...
                         'HorizontalAlignment', 'center', 'VerticalAlignment'...
                         , 'middle', 'FontSize', 8, 'Color', 'k');
