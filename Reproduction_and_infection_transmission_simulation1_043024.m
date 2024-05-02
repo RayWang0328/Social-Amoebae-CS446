@@ -12,7 +12,7 @@ minRows = 2;
 minCols = 2;
 
 % set simulation's duration and variables
-numIterations = 30;
+numIterations = 100;
 x = 1:rows;
 y = 1:columns;
 
@@ -20,14 +20,18 @@ integerVisualization=1;
  
 neighborhoodSize = 8; % size of neighborhood
 
-reproductionTime=10; % every 10 frames amoebas will reproduce
-reproductionRate = 2; %how fast amoebas reproduce(1.2 = 20% growth, 1.0 =
-                        % 0% growth).
+reproductionTime=4; % every 4 frames amoebas will reproduce
+infectionTime=2;%every 2 hours infection will spread in the clusters
+infectionLimit=12; %after 12 hours of persistent infection, amoeba will die
 
-   
-%MAY NEED SOME OF THESE DIFFUSION CONSTANTS FOR CHEMICAL SIGNALING
-% r = 0.05; % Diffusion Constant
-% coolingRate = 0.2; % Cooling Constant
+
+infectedReproductionRate = 2; %how fast amoebas reproduce(1.2 = 20% growth, 1.0 =
+uninfectedReproductionRate=1.2;   % 0% growth).
+
+
+infectionDeathRate=.65;
+
+  
 numAmoebas = 1000; %number of total amoebas
 amoebasPerCell = 10; %number of amoebes per section
 numClusters = numAmoebas/amoebasPerCell; %number of clusters started with
@@ -36,10 +40,16 @@ clusterPositions = zeros(numClusters,2);
 percentInfected = 0.2; %sets what proportion of amoebas are infected 0.0-1
 numInfectedClusters = round(percentInfected*numClusters); %calculate number 
                                                       %of infected clusters
+                                                      
+                                                      
 numInfected=percentInfected*numAmoebas;
+
+
  
 environment =  repmat({zeros(1,2)},rows,columns); % natural environment
 extEnvironment = repmat({zeros(1,2)},rows+2,columns+2); % environment with bounds
+
+
 %create lists to update information through out simulation
 environmentList = cell(1,numIterations);
 extEnvironmentList = cell(1, numIterations);
@@ -77,12 +87,16 @@ environmentList{1} = environment;
 extEnvironmentList{1} = extEnvironment;
 clusterPosList{1} = clusterPositions; 
 
+
+
 %find the sum of the neighbors
 sumNeighbors = @(x, y, extEnvironment) (extEnvironment{x+1-1, y+1-1}(1) + ...
     extEnvironment{x+1-1, y+1}(1) + extEnvironment{x+1-1, y+1+1}(1) + ...
     extEnvironment{x+1, y+1-1}(1) + extEnvironment{x+1, y+1+1}(1) + ...
     extEnvironment{x+1+1, y+1-1}(1) + extEnvironment{x+1+1, y+1}(1) + ...
     extEnvironment{x+1+1, y+1+1}(1));
+
+
 
 %Indexs for moving Amoeba clusters
 indexMapping ={[-1 -1], [0 -1], [1 -1], [-1 0], [1 0], [-1 1],[0 1],[1 1]};
@@ -96,9 +110,7 @@ for i = 2:numIterations
     oldClusterPos = clusterPosList{i-1};
     newClusterPos = [];
     
-    %display for validation
-%     fprintf("Iteration %d:\n",i)
-%     disp(clusterCharacteristics(:,:,i-1))
+   
     %cycle through each cluster and move them accordingly accordingly
     for j = 1:aliveClusters
         %set position and cluster size
@@ -109,17 +121,60 @@ for i = 2:numIterations
             environment);
         clusterInfected = getInfected(clusterPos(1),clusterPos(2),...
             environment);
+        clusterUninfected=clusterSize-clusterInfected;
         
-        %set grid element in enviorment to be zero to show amoeabas have
+        %set grid element in environment to be zero to show amoeabas have
         %moved
         environment{clusterPos(1),clusterPos(2)}= [0,0];
         extEnvironment(2:rows+1, 2:columns+1) = environment;
  
         
-%          if rem(i,reproductionTime)==0 %check if it is a reproduction iteration
-%             clusterSize = round(reproductionRate *clusterSize);
-%             clusterInfected = round(reproductionRate *clusterInfected);
-%          end
+        %reproduce on reproductionTime
+        if rem(i,reproductionTime)==0 %check if it is a reproduction iteration
+            fprintf('Cluster Infected: %d \n' , clusterInfected)
+            fprintf('Cluster Uninfected: %d \n' , clusterUninfected)
+            fprintf('Cluster Size: %d \n' , clusterSize);
+            
+            clusterInfected = round(infectedReproductionRate *clusterInfected);
+             
+            clusterUninfected=round(uninfectedReproductionRate*clusterUninfected);
+            
+            clusterSize = clusterInfected+clusterUninfected;
+            
+            
+            
+            fprintf('Cluster Infected: %d \n' , clusterInfected)
+            fprintf('Cluster Uninfected: %d \n' , clusterUninfected)
+            fprintf('Cluster Size: %d \n' , clusterSize);
+             
+        end
+        
+        %transmit infection on infectiontime
+        if rem(i,infectionTime)==0 && clusterSize~=0
+           infectedPercentage=(clusterInfected/clusterSize); 
+           clusterInfected=clusterInfected + round(clusterUninfected*infectedPercentage);
+            
+           clusterInfected=round(clusterInfected);
+           
+           
+           
+           
+        end
+        
+        
+        %25-35% of infected amoebas persist with infection so around .65%
+        %will die when they reach the infection limit iteration
+        
+        if rem(i,infectionLimit)==0
+          infectionKilled=infectionDeathRate*clusterInfected;
+          clusterInfected=clusterInfected-infectionKilled;
+          clusterSize=clusterSize-infectionKilled;
+          
+          clusterInfected=round(clusterInfected);
+          clusterSize=round(clusterSize);
+        
+        end
+        
         
         %if there are neighbors that are ameobas, and below the starvation
         %threshold then combine with neighbors
@@ -134,9 +189,6 @@ for i = 2:numIterations
             [maxNeighborSize, index] = max(neighbors);
             clusterMove = indexMapping{index};
             
-            %Display for validation
-%             fprintf("Original Cluster Size: %d, Original Cluster Inf: %d\n",...
-%                 clusterSize,clusterInfected)
             
 
             %get size of the neighboring cluster
@@ -149,11 +201,7 @@ for i = 2:numIterations
             clusterInfected =clusterInfected+getInfected(neighborPos(1),...
                 neighborPos(2),environment);
             
-            %print out for validation
-%             fprintf("Cluster Pos: %d, %d\n",clusterPos(1),clusterPos(2))
-%             fprintf("Neighbor Pos: %d, %d\n",neighborPos(1),neighborPos(2))
-%             fprintf("Row Index: %d\n\n", rowIndex(1))
-            
+           
 
             
             %update the neighbor to show the combined size and infection
@@ -161,9 +209,7 @@ for i = 2:numIterations
                 neighborPos(2),clusterSize,environment);
             environment = setInfected(neighborPos(1),...
                 neighborPos(2),clusterInfected,environment);
-%             fprintf("Updated Cluster Size: %d, UpdatedCluster Inf: %d\n\n",...
-%                 clusterCharacteristics(rowIndex(1),3,i-1),...
-%                 clusterCharacteristics(rowIndex(1),4,i-1))
+%             
 
             aliveClusters = aliveClusters - 1;
         else
@@ -219,10 +265,7 @@ function neighbors = getNeighborSizes(row,col,extEnvironment)
      neighbors(5) = [];
 end
 
-%function infectedEnvironment = getInfectedEnvironment(environment)
- %   matrixEnvironment = cell2mat(environment);
-%    infectedEnvironment = matrixEnvironment(:,2:2:2*(columns));
-%end
+
 
 function clusterInfected = getInfected(row,col,environment)
     clusterInfected = environment{row,col}(2);
@@ -279,7 +322,7 @@ function [ ] = show_CA_List(environmentList,...
     rows,columns,interval, foodList,integerVisualization,numAmoebas,numInfected)
     
     infectedInterval=numInfected/20;
-    sizeInterval=numAmoebas/20
+    sizeInterval=numAmoebas/20;
     
     for i=1:interval:length(environmentList)
         environment = environmentList{i};
@@ -289,7 +332,7 @@ function [ ] = show_CA_List(environmentList,...
         
         
         subplot(1,2,1); 
-        colormap(subplot(1,2,1),hsv); 
+        colormap(subplot(1,2,1),flipud(bone)); 
         imagesc(infectedEnvironment);
         caxis([0,numInfected]);
         colorbar;
@@ -300,7 +343,8 @@ function [ ] = show_CA_List(environmentList,...
             10*infectedInterval,11*infectedInterval,12*infectedInterval...
             ,13*infectedInterval,14*infectedInterval,15*infectedInterval,...
             16*infectedInterval,17*infectedInterval,18*infectedInterval,...
-            19*infectedInterval,20*infectedInterval,21*infectedInterval];   
+            19*infectedInterval,20*infectedInterval,21*infectedInterval]; 
+        
         bar1.TickLabels={'empty',sprintf('%d infected amoeba',infectedInterval),...
             sprintf('%d infected amoeba',2*infectedInterval),...
             sprintf('%d infected amoeba',3*infectedInterval),...
@@ -320,10 +364,10 @@ function [ ] = show_CA_List(environmentList,...
             sprintf('%d infected amoeba',17*infectedInterval),...
             sprintf('%d infected amoeba',18*infectedInterval),...
             sprintf('%d infected amoeba',19*infectedInterval),...
-            sprintf('%d + infected amoeba',20*infectedInterval)};
+            sprintf('%d infected amoeba',20*infectedInterval)};
         
-           for m = 1:size(infectedEnvironment)[1]
-                for j= 1:size(infectedEnvironment)[2]
+           for m = 1:size(infectedEnvironment)[1];
+                for j= 1:size(infectedEnvironment)[2];
 
             
                     if (infectedEnvironment(m,j)==0 && sizeEnvironment(m,j)>0)
@@ -333,7 +377,7 @@ function [ ] = show_CA_List(environmentList,...
                     
                         text(j, m, num2str(infectedEnvironment(m, j)),...
                         'HorizontalAlignment', 'center', 'VerticalAlignment'...
-                        , 'middle', 'FontSize', 8, 'Color', 'k');
+                        , 'middle', 'FontSize', 8, 'Color', 'red');
             
                     end
                 end       
@@ -344,7 +388,7 @@ function [ ] = show_CA_List(environmentList,...
                     if (integerVisualization==1 && infectedEnvironment(m,j)~=0)
                     text(j, m, num2str(infectedEnvironment(m, j)),...
                         'HorizontalAlignment', 'center', 'VerticalAlignment'...
-                        , 'middle', 'FontSize', 8, 'Color', 'k');
+                        , 'middle', 'FontSize', 8, 'Color', 'red');
                     end
             end
         end
@@ -364,13 +408,17 @@ function [ ] = show_CA_List(environmentList,...
         caxis([0,numAmoebas]);
         colorbar;
         bar2=colorbar;
+        
+        
         bar2.Ticks=[sizeInterval,2*sizeInterval,3*sizeInterval...
             ,4*sizeInterval,5*sizeInterval,6*sizeInterval,...
             7*sizeInterval,8*sizeInterval,9*sizeInterval,...
             10*sizeInterval,11*sizeInterval,12*sizeInterval...
             ,13*sizeInterval,14*sizeInterval,15*sizeInterval,...
             16*sizeInterval,17*sizeInterval,18*sizeInterval,...
-            19*sizeInterval,20*sizeInterval,21*sizeInterval];   
+            19*sizeInterval,20*sizeInterval,21*sizeInterval]; 
+        
+        
         bar2.TickLabels={'empty',sprintf('%d infected amoeba',infectedInterval),...
             sprintf('%d infected amoeba',2*sizeInterval),...
             sprintf('%d infected amoeba',3*sizeInterval),...
