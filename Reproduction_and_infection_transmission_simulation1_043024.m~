@@ -170,22 +170,19 @@ for i = 1:numClusters
     %stores randomly generated cluster positions
     clusterPositions(i,:) = clusterPos;
     
-    %set number of infected clusters, all amoebas in cluster will be infected
+    %set number of infected clusters, all amoebas in Cell will be infected
     if i<=numInfectedClusters
-        
-        %sets clusterInfected to all amoebas in the cluster 
         environment{clusterPos(1), clusterPos(2)} = [amoebasPerCell,amoebasPerCell];
     else
-        %initializes the cluster with no infected amoeba
         environment{clusterPos(1), clusterPos(2)} = [amoebasPerCell,0];
     end
 end
 
-%update extended environment to contain the newly initiated environment
+%update extended enviorment
 extEnvironment(2:rows+1, 2:columns+1) = environment;
 
 
-%set first index of each storage list correctly
+%set first index of each list correctly
 environmentList{1} = environment;
 extEnvironmentList{1} = extEnvironment;
 clusterPosList{1} = clusterPositions; 
