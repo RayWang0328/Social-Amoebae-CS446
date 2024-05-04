@@ -50,6 +50,10 @@ columns = 30; % the height of the environment- each row increases height...
 minRows = 2;
 minCols = 2;
 
+%This creates the same "random" output everytime and the seed can be
+%changed to create a new set of data
+rng(30)
+
 % set simulation's duration and variables:
 
 %This is the length that the simulation will run for. Each iteration...
@@ -104,7 +108,11 @@ uninfectedReproductionRate=1.2;
 infectionDeathRate=.65;
 
 %this is the starting number of amoebas in the simulation.  
-numAmoebas = 1000; %number of initialtotal amoebas
+numAmoebas = 1000; 
+
+%This is the number of Amoebas in the simulation needed to create a
+%fruiting body.
+slugTotal = 700;
 
 %Given the magnitude of amoebas in a simulation, agent based modeling for
 %each individual amoeba would be computationally intensive. As such,
@@ -126,7 +134,8 @@ numInfected=percentInfected*numAmoebas; %use the initial percent infected
 %value to calculated the number of infected amoeba at the beginning of the 
 %simulation. 
 
-
+percentSpore = 0.05; %The percent of amoebas that should be included in a 
+% single spore when the fruiting body releases them
  
 environment =  repmat({zeros(1,2)},rows,columns); % natural environment
 %this consists of a cell array containing cells with 2 values in them.
@@ -143,7 +152,9 @@ environmentList = cell(1,numIterations); %stores each environment
 extEnvironmentList = cell(1, numIterations); %stores each extended 
 %environment
 clusterPosList= cell(1,numIterations); %stores all cluster position lists
-
+%fruitingBodyList = cell(1,numIterations); %stores which clusters are in a 
+                                         %fruiting body stage to keep in
+                                         %place and not combine into
 
 %Amoeba social behavior is dependent on starvation signalling which
 %triggers amoebas to cluster together. As such, there is  prescribed amount
@@ -152,16 +163,19 @@ clusterPosList= cell(1,numIterations); %stores all cluster position lists
 %decreases to a certain value or below a "starvation threshold" and can no
 %longer support the population of amoebas, clustering behavior is
 %triggered.
-food = 100; % Starting amount of food in the environment
+food = 4000; % Starting amount of food in the environment
 starvationThreshold = 150; % Food level at which clusters start to clump
 foodDecayRate = 1;%rate at which amoebas consume available food
 foodList = 1:numIterations; %stores food availability at each point in 
                                                         %the simulation
+                                                        
 foodList(1) = food; %sets the first stored food value to the initial 
 %allotted food for the environment
 
 aliveClusters = numClusters; %keeps track of the number of clusters that are 
 %active in the environment. All clusters are initially active. 
+
+
 
 % initialize position and size of amoeba clusters
 for i = 1:numClusters
@@ -194,7 +208,7 @@ extEnvironment(2:rows+1, 2:columns+1) = environment;
 environmentList{1} = environment;
 extEnvironmentList{1} = extEnvironment;
 clusterPosList{1} = clusterPositions; 
-
+fruitingBodyList{1} = [];
 
 
 %find the sum of the neighbors. In the environment, empty 3.6 square
@@ -231,9 +245,8 @@ for i = 2:numIterations
     %make a new one based on movements that occur during this step in the
     %simulation
     oldClusterPos = clusterPosList{i-1};
-    newClusterPos = [];
-    
-   
+    newClusterPos = [];  
+
     %cycle through each cluster and move them accordingly based on
     %environmental factors
     for j = 1:aliveClusters
@@ -248,191 +261,217 @@ for i = 2:numIterations
         clusterInfected = getInfected(clusterPos(1),clusterPos(2),...
             environment);
         
-        %calculate the uninfected population of the cluster- this will be 
-        %a part of the cluster that isn't infected
-        clusterUninfected=clusterSize-clusterInfected;
-        
-        %set grid element in environment to be zero to show amoeabas have
-        %moved, this removes amoebas from their previous location
-        environment{clusterPos(1),clusterPos(2)}= [0,0];
-        extEnvironment(2:rows+1, 2:columns+1) = environment;
- 
-        
-        %reproduce on reproductionTime- if it has been the number of hours
-        %defined by reproductionTime, then the clusters will reproduce.
-        %Unicellular reproduction only happens prior to and after slug
-        %formation happens- there is no reproduction once amoebas have
-        %fully clustered into a slug. 
-        if rem(i,reproductionTime)==0 && aliveClusters>1 
-            %check if it is a reproduction iteration
-            
-            %this increases the number of infected amoebas based on the
-            %prescribed infectedReproductionRate. 
-            clusterInfected = round(infectedReproductionRate ...
-                *clusterInfected);
-             
-            %this increases the number of uninfected amoebas based on the
-            %prescribed unInfectedReproductionRate. 
-            clusterUninfected=round(uninfectedReproductionRate*...
-                clusterUninfected);
-            
-            
-            %This recalculates the cluster size by adding together the 2
-            %reproduced popualtions
-            clusterSize = clusterInfected+clusterUninfected;
-            
-            
-           
-             
-        end
-        
-        %transmit infection on infectiontime. If it has been the number of
-        %hours prescribed by infectionTime (i.e. infection spreads every
-        %hour) then infection within clusters will be transmitted
-        %horizontally. This mimics how in horizontal infection, amoebas in
-        %close proximity to one another can infect one another. In this
-        %case, clusters represent a certain number of amoebas in a 3.6
-        %square centimeter space in the environment. As such, it makes
-        %sense that those occupying the same space in the environment would
-        %be the ones to infect one another. 
-        if rem(i,infectionTime)==0 && clusterSize~=0 %this checks to make 
-            %sure it is an iteration that infection transmission happens on
-            
-           %calculate the percentage of the cluster that is currently 
-           %infected
-           infectedPercentage=(clusterInfected/clusterSize); 
-           
-           %there is biological evidence to show that infection spreads
-           %with a linear relationship to the amount of infection in the
-           %surrounding area. I.e. if more of your surrounding environment
-           %is infected, you have a higher chance of getting infected.
-           %Thus, we calculate the number of amoebas that get infected
-           %proportional to the number of amoebas that are infected in the
-           %surrounding environment (cluster). The same percentage of the 
-           %unininfected amoebas becomes infected as was orignially 
-           %infected in the cluster. 
-           clusterInfected=clusterInfected + round(clusterUninfected...
-               *infectedPercentage);
-            
-           %round the number of infected amoebas to the nearest integer- 
-           %you cannot have a percentage of an amoeba
-           clusterInfected=round(clusterInfected);
-           
-           
-           
-           
-        end
-        
-        
-        %25-35% of infected amoebas persist with infection so around .65%
-        %will die when they reach the infection limit iteration
-        %checks to see if it is the prescribed interval in the simulation
-        %where infected amoebas reach their limit and die off
-        if rem(i,infectionLimit)==0
-            
-          %calculates the number of amoebas that die from infection based
-          %on the infection death rate
-          infectionKilled=infectionDeathRate*clusterInfected;
-          
-          %updates the cluster infected size to reflect the infected
-          %amoebas that have died
-          clusterInfected=clusterInfected-infectionKilled;
-          
-          %updates the cluster size to reflect the infected amoebas that
-          %have died
-          clusterSize=clusterSize-infectionKilled;
-          
-          %resets clusterInfected and clusterSize to be integers because
-          %you cant have percentages of amoebas
-          clusterInfected=round(clusterInfected);
-          clusterSize=round(clusterSize);
-        
-        end
-        
-        
-        %if there are neighbors that are ameobas, and the environment is 
-        %below the starvation
-        %threshold then combine with those neighbors
-        %since empty cells have a value of 0, if sumNeighbors>0 it means
-        %amoebas occupy adjacent cells. If the food has dipped below the
-        %starvation threshold, this means social behavior is occurring and
-        %the amoebas will cluster together
-        if sumNeighbors(clusterPos(1),clusterPos(2),extEnvironment) > 0 &&...
-             food < starvationThreshold
-         
-            %get list of neighbors that is shaped into 1d array
-            neighbors = getNeighborSizes(clusterPos(1),clusterPos(2),...
-                extEnvironment);
+        if clusterSize> slugTotal
+            %Reset environment and positions to remvove the remaining
+            %clusters, as only one slug will form.
+            environment = repmat({zeros(1,2)},rows,columns);
+            newClusterPos = [];
 
-            % find which direction to go and size of largest neighbor
-            [maxNeighborSize, index] = max(neighbors);
-            clusterMove = indexMapping{index};
+            %find how amoebas per spore there are base on given parameters
+            %above. Multiplied by 0.8 becaus 20% of amoebas die in the 
+            %stalk of the fruiting body
+            %round all calculations to end up with full amoebas and spores
+            amoebasPerCell = round(clusterSize * percentSpore*0.8);
+            infectedPerCell = round(clusterInfected* percentSpore*0.8);
+            numSpores = round(clusterSize/ amoebasPerCell);
             
+            %reassign how many clusters will be alive after
+            aliveClusters = numSpores;
             
+            %update food to continue
+            foodList(i) = food;
 
-            %get size of the neighboring cluster
-            neighborPos= [clusterPos(1)+clusterMove(1),clusterPos(2)+...
-                clusterMove(2)];
-         
-            
-            %update the clusterSize and number of infected once combined-
-            %this means that the new cluster will combine the sizes and
-            %infected amounts from the 2 clusters before they combined
-            clusterSize = maxNeighborSize + clusterSize;
-            clusterInfected =clusterInfected+getInfected(neighborPos(1),...
-                neighborPos(2),environment);
-            
-           
+            for s = 1:numSpores
+                %sets the spore position randomly in the envrionment
+                clusterPos = [randi([1 rows]) randi([1 columns])];
 
-            
-            %update the neighboring cell location in the environment to 
-            %show the combined size and infection
-             environment = setClusterSize(neighborPos(1),...
-                neighborPos(2),clusterSize,environment);
-            environment = setInfected(neighborPos(1),...
-                neighborPos(2),clusterInfected,environment);
-%             
-            %since two of the clusters have combined, we have one less
-            %active and updating cluster in the environment
-            aliveClusters = aliveClusters - 1;
-        else
-            
-            if food < starvationThreshold && aliveClusters > 1
-                % Move towards the closest cluster in the environment,
-                % amoebas are attempting to group together into a slug due
-                % to their starving condition
-                clusterMove = findClosestCluster(clusterPos, oldClusterPos);
-            else
-                %randomly choose movement for the cluster- amoebas continue
-                %to randomly move around the environment if there is no
-                %starvation and they are not clustering
-                indsa = randi([1, 8]);
-                clusterMove = indexMapping{indsa};
+                %stores randomly generated spore positions
+                newClusterPos(s,:) = clusterPos;
+
+                %set number of infected clusters, all amoebas in cluster 
+                %will be infected
+                environment = setClusterSize(clusterPos(1),clusterPos(2),...
+                        amoebasPerCell,environment);
+                environment = setInfected(clusterPos(1),clusterPos(2),...
+                        infectedPerCell,environment);
+
             end
             
-            %reset the cluster position to reflect the movement choice made
-            %above
-            clusterPos = [max(min(clusterPos(1) + clusterMove(1), rows),...
-                minRows), max(min(clusterPos(2) + clusterMove(2), columns), ...
-                minCols)];          
+            extEnvironment(2:rows+1, 2:columns+1) = environment;
+        else
+            %set grid element in environment to be zero to show amoeabas 
+            %have moved, this removes amoebas from their previous location
+            environment{clusterPos(1),clusterPos(2)}= [0,0];
+            extEnvironment(2:rows+1, 2:columns+1) = environment;
+
+
+            %reproduce on reproductionTime- if it has been the number of hours
+            %defined by reproductionTime, then the clusters will reproduce.
+            %Unicellular reproduction only happens prior to and after slug
+            %formation happens- there is no reproduction once amoebas have
+            %fully clustered into a slug. 
+            if rem(i,reproductionTime)==0 && foodList(i-1)>starvationThreshold
+                %check if it is a reproduction iteration
+
+                %remove current cluster size from total amount of amoebas
+                numAmoebas = numAmoebas - clusterSize;
+
+                %this increases the number of infected amoebas based on the
+                %prescribed infectedReproductionRate. 
+                clusterInfected = round(infectedReproductionRate ...
+                    *clusterInfected);
+
+                %this increases the number of uninfected amoebas based on the
+                %prescribed unInfectedReproductionRate. 
+                clusterUninfected=round(uninfectedReproductionRate*...
+                    clusterUninfected);   
+
+                %This recalculates the cluster size by adding together the 2
+                %reproduced popualtions
+                clusterSize = clusterInfected+clusterUninfected;
+
+                %add updated cluster size to the total amount of amoebas
+                numAmoebas = numAmoebas + clusterSize;
+
+            end
+
+            %transmit infection on infectiontime. If it has been the number of
+            %hours prescribed by infectionTime (i.e. infection spreads every
+            %hour) then infection within clusters will be transmitted
+            %horizontally. This mimics how in horizontal infection, amoebas in
+            %close proximity to one another can infect one another. In this
+            %case, clusters represent a certain number of amoebas in a 3.6
+            %square centimeter space in the environment. As such, it makes
+            %sense that those occupying the same space in the environment would
+            %be the ones to infect one another. 
+            if rem(i,infectionTime)==0 && clusterSize~=0 %this checks to make 
+                %sure it is an iteration that infection transmission happens on
+
+               %calculate the percentage of the cluster that is currently 
+               %infected
+               infectedPercentage=(clusterInfected/clusterSize); 
+
+               %there is biological evidence to show that infection spreads
+               %with a linear relationship to the amount of infection in the
+               %surrounding area. I.e. if more of your surrounding environment
+               %is infected, you have a higher chance of getting infected.
+               %Thus, we calculate the number of amoebas that get infected
+               %proportional to the number of amoebas that are infected in the
+               %surrounding environment (cluster). The same percentage of the 
+               %unininfected amoebas becomes infected as was orignially 
+               %infected in the cluster. 
+               clusterInfected=clusterInfected + round(clusterUninfected...
+                   *infectedPercentage);
+
+               %round the number of infected amoebas to the nearest integer- 
+               %you cannot have a percentage of an amoeba
+               clusterInfected=round(clusterInfected);
+
+            end
+
+
+            %25-35% of infected amoebas persist with infection so around .65%
+            %will die when they reach the infection limit iteration
+            %checks to see if it is the prescribed interval in the simulation
+            %where infected amoebas reach their limit and die off
+            if rem(i,infectionLimit)==0
+
+              %calculates the number of amoebas that die from infection based
+              %on the infection death rate, round to be integer
+              infectionKilled=round(infectionDeathRate*clusterInfected);
+
+              %updates the cluster infected size to reflect the infected
+              %amoebas that have died
+              clusterInfected=clusterInfected-infectionKilled;
+
+              %updates the cluster size to reflect the infected amoebas that
+              %have died
+              clusterSize=clusterSize-infectionKilled;
+
+              %remove amoebas killed from total amount of amoebas
+              numAmoebas = numAmoebas - infectionKilled;
+
+            end
+
+            %if there are neighbors that are ameobas, and the environment is 
+            %is below the starvation threshold then combine with those 
+            %neighbors
+            %Empty cells have a value of 0, if sumNeighbors>0 it means
+            %amoebas occupy adjacent cells. If the food has dipped below 
+            %thestarvation threshold, this means social behavior is 
+            %occurring and the amoebas will cluster together
+            if sumNeighbors(clusterPos(1),clusterPos(2),extEnvironment) > 0 &&...
+                 foodList(i-1) < starvationThreshold
+
+                %get list of neighbors that is shaped into 1d array
+                neighbors = getNeighborSizes(clusterPos(1),clusterPos(2),...
+                    extEnvironment);
                 
-            %update new position in position list
-            newClusterPos= [newClusterPos; clusterPos];
-            
-            %update infection and size in the environment  based on any 
-            %updates made above due to the time in the simulation
-            environment = setClusterSize(clusterPos(1),clusterPos(2),...
-                clusterSize,environment);
-            environment = setInfected(clusterPos(1),clusterPos(2),...
-                clusterInfected,environment);
-            
+                % find which direction to go and size of largest neighbor
+                [maxNeighborSize, index] = max(neighbors);
+                clusterMove = indexMapping{index};
+
+                %get size of the neighboring cluster
+                neighborPos= [clusterPos(1)+clusterMove(1),clusterPos(2)+...
+                    clusterMove(2)];
+
+                %update the clusterSize and number of infected once combined-
+                %this means that the new cluster will combine the sizes and
+                %infected amounts from the 2 clusters before they combined
+                clusterSize = maxNeighborSize + clusterSize;
+                clusterInfected =clusterInfected+getInfected(neighborPos(1),...
+                    neighborPos(2),environment);
+
+                %update the neighboring cell location in the environment to 
+                %show the combined size and infection
+                 environment = setClusterSize(neighborPos(1),...
+                    neighborPos(2),clusterSize,environment);
+                environment = setInfected(neighborPos(1),...
+                    neighborPos(2),clusterInfected,environment);
+
+                %since two of the clusters have combined, we have one less
+                %active and updating cluster in the environment
+                aliveClusters = aliveClusters - 1;
+            else
+
+                if foodList(i-1) < starvationThreshold && aliveClusters > 1
+                    % Move towards the closest cluster in the environment,
+                    % amoebas are attempting to group together into a slug due
+                    % to their starving condition
+                    clusterMove = findClosestCluster(clusterPos, oldClusterPos);
+                else
+                    %randomly choose movement for the cluster- amoebas continue
+                    %to randomly move around the environment if there is no
+                    %starvation and they are not clustering
+                    indsa = randi([1, 8]);
+                    clusterMove = indexMapping{indsa};
+                end
+
+                %reset the cluster position to reflect the movement choice made
+                %above
+                clusterPos = [max(min(clusterPos(1) + clusterMove(1), rows),...
+                    minRows), max(min(clusterPos(2) + clusterMove(2), columns), ...
+                    minCols)];          
+
+                %update new position in position list
+                newClusterPos= [newClusterPos; clusterPos];
+
+                %update infection and size in the environment  based on any 
+                %updates made above due to the time in the simulation
+                environment = setClusterSize(clusterPos(1),clusterPos(2),...
+                    clusterSize,environment);
+                environment = setInfected(clusterPos(1),clusterPos(2),...
+                    clusterInfected,environment);
+
+            end
         end
-        
     end
+        
     %update current food and food variable list
-    %food decreases based on the number of amoebas in the environment. 
-    food = cast(food - (aliveClusters * foodDecayRate),"uint8");
-    foodList(i) = food;
+    %food decreases based on the number of amoebas in the environment
+    %and ensure that food doesn't go below zero. 
+    updateFood = round(foodList(i-1) - (numAmoebas * foodDecayRate));
+    foodList(i) = max([updateFood 0]);
     
     %update the external environment to contain the updated environment
     extEnvironment(2:rows+1, 2:columns+1) = environment;
@@ -472,7 +511,6 @@ function neighbors = getNeighborSizes(row,col,extEnvironment)
                 row+1+1,2*(col+1)-1-2:2:2*(col+1)-1+2),1,[]);
      neighbors(5) = [];
 end
-
 
 
 
