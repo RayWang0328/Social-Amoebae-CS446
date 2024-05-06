@@ -41,9 +41,9 @@
 
 %these values represent the dimensions of the 2D environment we are
 %simulating. 
-rows = 30; %the width of the environment- each row increases width by 3.6 ...
+rows = 20; %the width of the environment- each row increases width by 3.6 ...
                                                                         %cm
-columns = 30; % the height of the environment- each row increases height...
+columns = 20; % the height of the environment- each row increases height...
                                                                 %by 3.6 cm
 
 % for extended grid checks to keep bounds
@@ -85,7 +85,7 @@ reproductionTime=4;
 %population. Given that Burkholderia can reproduce around every 20 minutes,
 %we anticipate that infection would spread horizontally  in adjacent 
 %(clustered) amoebas on every iteration of the simulation. (Every 1 hour)
-infectionTime=1;%every 2 hours infection will spread in the clusters
+infectionTime=2;%every 2 hours infection will spread in the clusters
 
 %At a certain point, infected amoeba will succumb to their infection and
 %die. This value indicates how frequently in the simulation that happens.
@@ -112,7 +112,7 @@ numAmoebas = 1000;
 
 %This is the number of Amoebas in the simulation needed to create a
 %fruiting body.
-slugTotal = 700;
+slugTotal = 300;
 
 %Given the magnitude of amoebas in a simulation, agent based modeling for
 %each individual amoeba would be computationally intensive. As such,
@@ -163,7 +163,7 @@ clusterPosList= cell(1,numIterations); %stores all cluster position lists
 %decreases to a certain value or below a "starvation threshold" and can no
 %longer support the population of amoebas, clustering behavior is
 %triggered.
-food = 4000; % Starting amount of food in the environment
+food = 100; % Starting amount of food in the environment
 starvationThreshold = 150; % Food level at which clusters start to clump
 foodDecayRate = 1;%rate at which amoebas consume available food
 foodList = 1:numIterations; %stores food availability at each point in 
@@ -260,8 +260,9 @@ for i = 2:numIterations
             environment);
         clusterInfected = getInfected(clusterPos(1),clusterPos(2),...
             environment);
+        clusterUninfected = clusterSize-clusterInfected;
         
-        if clusterSize> slugTotal
+        if clusterSize>= slugTotal
             %Reset environment and positions to remvove the remaining
             %clusters, as only one slug will form.
             environment = repmat({zeros(1,2)},rows,columns);
