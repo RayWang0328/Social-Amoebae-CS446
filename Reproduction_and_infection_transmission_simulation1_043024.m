@@ -175,6 +175,8 @@ foodList(1) = food; %sets the first stored food value to the initial
 aliveClusters = numClusters; %keeps track of the number of clusters that are 
 %active in the environment. All clusters are initially active. 
 
+%keep track of iterations where fruiting body happens
+fruitingBodyIter = zeros(1,numIterations);
 
 
 % initialize position and size of amoeba clusters
@@ -208,7 +210,7 @@ extEnvironment(2:rows+1, 2:columns+1) = environment;
 environmentList{1} = environment;
 extEnvironmentList{1} = extEnvironment;
 clusterPosList{1} = clusterPositions; 
-fruitingBodyList{1} = [];
+
 
 
 %find the sum of the neighbors. In the environment, empty 3.6 square
@@ -221,7 +223,6 @@ sumNeighbors = @(x, y, extEnvironment) (extEnvironment{x+1-1, y+1-1}(1) + ...
     extEnvironment{x+1, y+1-1}(1) + extEnvironment{x+1, y+1+1}(1) + ...
     extEnvironment{x+1+1, y+1-1}(1) + extEnvironment{x+1+1, y+1}(1) + ...
     extEnvironment{x+1+1, y+1+1}(1));
-
 
 
 %Indexs for moving Amoeba clusters. These indexes represent the 8 index
@@ -249,6 +250,7 @@ for i = 2:numIterations
 
     %cycle through each cluster and move them accordingly based on
     %environmental factors
+            
     for j = 1:aliveClusters
         
         %set position of the current cluster for updating by accessing that
@@ -262,12 +264,28 @@ for i = 2:numIterations
             environment);
         clusterUninfected = clusterSize-clusterInfected;
         
-        if clusterSize>= slugTotal
+        
+        if (fruitingBodyIter(i-1) ~= 1)&&...
+            (clusterSize>= slugTotal)
             %Reset environment and positions to remvove the remaining
             %clusters, as only one slug will form.
             environment = repmat({zeros(1,2)},rows,columns);
-            newClusterPos = [];
+            newClusterPos = clusterPos;
+            
+            %put slug back into the environment
+            environment = setClusterSize(clusterPos(1),clusterPos(2),...
+            clusterSize,environment);
+            environment = setInfected(clusterPos(1),clusterPos(2),...
+            clusterInfected,environment);
+        
+            %reset how many clusters are alive
+            aliveClusters = 1;
+            
+            %used for visualization to know when to add caption
+            fruitingBodyIter(i) = 1;
+             
 
+        elseif fruitingBodyIter(i-1) == 1
             %find how amoebas per spore there are base on given parameters
             %above. Multiplied by 0.8 becaus 20% of amoebas die in the 
             %stalk of the fruiting body
@@ -276,16 +294,14 @@ for i = 2:numIterations
             infectedPerCell = round(clusterInfected* percentSpore*0.8);
             numSpores = round(clusterSize/ amoebasPerCell);
             
+            environment = repmat({zeros(1,2)},rows,columns);
+            newClusterPos = [];
+            
             %reassign how many clusters will be alive after
             aliveClusters = numSpores;
-            
-            %update food to continue
-            foodList(i) = food;
-
-            for s = 1:numSpores
+                for s = 1:numSpores
                 %sets the spore position randomly in the envrionment
                 clusterPos = [randi([1 rows]) randi([1 columns])];
-
                 %stores randomly generated spore positions
                 newClusterPos(s,:) = clusterPos;
 
@@ -296,9 +312,9 @@ for i = 2:numIterations
                 environment = setInfected(clusterPos(1),clusterPos(2),...
                         infectedPerCell,environment);
 
-            end
-            
-            extEnvironment(2:rows+1, 2:columns+1) = environment;
+                end
+                
+                fruitingBodyIter(i) = 2;
         else
             %set grid element in environment to be zero to show amoeabas 
             %have moved, this removes amoebas from their previous location
@@ -353,20 +369,32 @@ for i = 2:numIterations
                infectedPercentage=(clusterInfected/clusterSize); 
 
                %there is biological evidence to show that infection spreads
-               %with a linear relationship to the amount of infection in the
-               %surrounding area. I.e. if more of your surrounding environment
-               %is infected, you have a higher chance of getting infected.
+               %with a linear relationship to the amount of infection in
+               %the surrounding area. I.e. if more of your surrounding
+               %environmentis infected, you have a higher chance of getting 
+               %infected.
                %Thus, we calculate the number of amoebas that get infected
-               %proportional to the number of amoebas that are infected in the
-               %surrounding environment (cluster). The same percentage of the 
-               %unininfected amoebas becomes infected as was orignially 
+               %proportional to the number of amoebas that are infected in 
+               %the surrounding environment (cluster). The same percentage 
+               %of the unininfected amoebas becomes infected as was orignially 
                %infected in the cluster. 
-               clusterInfected=clusterInfected + round(clusterUninfected...
-                   *infectedPercentage);
+               
+               %keep track of new infection
+               newInfection = 0;
+               
+               %go through each uninfected amoeba and calcuate a random 
+               % number between 0 and 1, if less than infected percentage, 
+               %then that amoeba becomes infected
+               for amoeba = 1:clusterUninfected
+                    probabilityOfInfection=rand;
+                    if probabilityOfInfection<infectedPercentage
+                      newInfection = newInfection+1;
+                    end
+               end
 
-               %round the number of infected amoebas to the nearest integer- 
-               %you cannot have a percentage of an amoeba
-               clusterInfected=round(clusterInfected);
+               %update cluster infection and unInfected
+               clusterUninfected = clusterUninfected - newInfection;
+               clusterInfected=clusterInfected + newInfection;
 
             end
 
@@ -489,7 +517,7 @@ end
 %environment paramters, food information, whether or not integers should be
 %visualized, the number of amoebas that we set and the number of infected
 %amoebas
-show_CA_List(environmentList, ...
+show_CA_List(environmentList,fruitingBodyIter, ...
     rows,columns,1, foodList,integerVisualization,numAmoebas,numInfected);
 
 
@@ -512,7 +540,6 @@ function neighbors = getNeighborSizes(row,col,extEnvironment)
                 row+1+1,2*(col+1)-1-2:2:2*(col+1)-1+2),1,[]);
      neighbors(5) = [];
 end
-
 
 
 %this function sets a new cluster size for a given row, column, and new
@@ -581,10 +608,9 @@ end
 %environment parameters, the food list, whether or not to visualize
 %integers, the number of amoebas at the start and the number of infected at
 %the start. 
-function [ ] = show_CA_List(environmentList,...
+function [ ] = show_CA_List(environmentList, fruitingBodyIter,...
     rows,columns,interval, foodList,integerVisualization,numAmoebas,numInfected)
     
-
     %this is used for colorbar visualization. determines the interval that
     %we will increment color visualization on by dividing the maximum value
     %by 20 and splitting it into sections
@@ -594,7 +620,6 @@ function [ ] = show_CA_List(environmentList,...
     %beggins iterating through each environment in the environment list
     
     for i=1:interval:length(environmentList)
-        
         %set the environment to visualize
         environment = environmentList{i};
         
@@ -692,7 +717,8 @@ function [ ] = show_CA_List(environmentList,...
         axis equal; axis tight; axis xy;
         xlim([0.5, rows + 0.5]);
         ylim([0.5, columns + 0.5]);
-        title(sprintf('Infected Environment - Frame: %d, Food Available: %d', i, foodList(i)));
+        title(sprintf('Infected Environment - Frame: %d, Food Available: %d'...
+            , i, foodList(i)));
         set(gca,'YDir','reverse');
 
         
@@ -747,7 +773,7 @@ function [ ] = show_CA_List(environmentList,...
                 if (integerVisualization==1 && sizeEnvironment(m,j)~=0)
                     text(j, m, num2str(sizeEnvironment(m, j)), ...
                         'HorizontalAlignment', 'center', 'VerticalAlignment'...
-                        , 'middle', 'FontSize', 8, 'Color', 'k');
+                        , 'middle', 'FontSize', 8, 'Color', 'magenta');
                 end
             end
         end
@@ -762,9 +788,29 @@ function [ ] = show_CA_List(environmentList,...
         ylim([0.5, columns + 0.5]);
         title(sprintf('Size Environment - Frame: %d, Food Available: %d', i, foodList(i)));
         set(gca,'YDir','reverse');
+        
+        %This adds annotations if a fruiting body occurs or a spore dispers
+        if fruitingBodyIter(i) == 1
+            fba = annotation('textbox',[.2 .07 .75 .12], 'String',...
+            ['This is a Fruiting Body of Amoebas. ',...
+            'All other clusters removed from environment'],...
+            'FitBoxToText','on', 'FontSize', 24);
+        %This adds annotations if spore dispersal
+        elseif fruitingBodyIter(i) == 2
+            %remove previous annotation
+            delete(fba);
+            %add new annotation
+            fba = annotation('textbox',[.2 .07 .75 .12], 'String',...
+            'Spore dispersal, randomly placing spores in environment',...
+            'FitBoxToText','on', 'FontSize', 24);
+        elseif i>1 && fruitingBodyIter(i-1) == 2
+            %remove previous annotation
+            delete(fba);
+        end
 
         %allow user to iterate through the visualized simulation by
         %pressing buttons
         w = waitforbuttonpress;
+        
     end
 end
