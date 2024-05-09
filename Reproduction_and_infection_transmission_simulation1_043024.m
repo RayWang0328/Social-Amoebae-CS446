@@ -152,9 +152,7 @@ environmentList = cell(1,numIterations); %stores each environment
 extEnvironmentList = cell(1, numIterations); %stores each extended 
 %environment
 clusterPosList= cell(1,numIterations); %stores all cluster position lists
-%fruitingBodyList = cell(1,numIterations); %stores which clusters are in a 
-                                         %fruiting body stage to keep in
-                                         %place and not combine into
+
 
 %Amoeba social behavior is dependent on starvation signalling which
 %triggers amoebas to cluster together. As such, there is  prescribed amount
@@ -296,8 +294,12 @@ for i = 2:numIterations
             infectedPerCell = round(clusterInfected* percentSpore);
             numSpores = round(clusterSize/ amoebasPerCell);
             
+            %
             environment = repmat({zeros(1,2)},rows,columns);
             newClusterPos = [];
+            
+            %reset food level to continue cycle
+            foodList(i-1) = food;
             
             %reassign how many clusters will be alive after
             aliveClusters = numSpores;
