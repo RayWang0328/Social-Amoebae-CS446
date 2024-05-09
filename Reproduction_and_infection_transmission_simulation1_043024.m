@@ -290,8 +290,10 @@ for i = 2:numIterations
             %above. Multiplied by 0.8 becaus 20% of amoebas die in the 
             %stalk of the fruiting body
             %round all calculations to end up with full amoebas and spores
-            amoebasPerCell = round(clusterSize * percentSpore*0.8);
-            infectedPerCell = round(clusterInfected* percentSpore*0.8);
+            clusterSize = 0.8*clusterSize;
+            clusterInfected = 0.8*clusterInfected;
+            amoebasPerCell = round(clusterSize * percentSpore);
+            infectedPerCell = round(clusterInfected* percentSpore);
             numSpores = round(clusterSize/ amoebasPerCell);
             
             environment = repmat({zeros(1,2)},rows,columns);
