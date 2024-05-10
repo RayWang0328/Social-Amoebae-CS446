@@ -61,8 +61,6 @@ rng(30)
 numIterations = 100;
 
 
-x = 1:rows;
-y = 1:columns;
 
 %This is a parameter that can be used to turn integer visualization on and
 %off. A value of 0 will visualize environments with only colored squares. A
@@ -231,12 +229,18 @@ sumNeighbors = @(x, y, extEnvironment) (extEnvironment{x+1-1, y+1-1}(1) + ...
 %moves made to access the 8 neighbors in a moore neighborhood. 
 indexMapping ={[-1 -1], [0 -1], [1 -1], [-1 0], [1 0], [-1 1],[0 1],[1 1]};
 
+%create total counters to keep track of total amount of amoebas for
+%visualization
+amoebaTotals= zeros(1,numIterations);
+amoebaTotals(1) = initialNumAmoebas;
+
 %holding all total infection for each experiment
 infectionTotals = zeros(1,numIterations);
 infectionTotals(1) = numInfected;
 
-amoebaTotals= zeros(1,numIterations);
-amoebaTotals(1) = initialNumAmoebas;
+%arrays to keep track of horizontal and vertical transmission.
+verticalTotals= zeros(1,numIterations);
+horizontalTotals = zeros(1,numIterations);
  
 % This loop implements our model for amoeba social behavior and
 % Burkholderia infection by updating environment states based on prescribed
@@ -255,10 +259,14 @@ for i = 2:numIterations
     %simulation
     oldClusterPos = clusterPosList{i-1};
     newClusterPos = [];  
+    
+    %counters to keep track of horizontal and vertical infections across
+    %each iteration
+    newHorizontalInfec = 0;
+    newVerticalInfec = 0;
 
     %cycle through each cluster and move them accordingly based on
     %environmental factors
-            
     for j = 1:aliveClusters
         
         %set position of the current cluster for updating by accessing that
@@ -382,6 +390,10 @@ for i = 2:numIterations
 
                 %add updated cluster size to the total amount of amoebas
                 numAmoebas = numAmoebas + clusterSize;
+                
+                %update vertical infection
+                newVerticalInfec = newVerticalInfec + clusterInfected-...
+                    clusterInfected/infectedReproductionRate;
 
             end
 
@@ -428,6 +440,9 @@ for i = 2:numIterations
                %update cluster infection and unInfected
                clusterUninfected = clusterUninfected - newInfection;
                clusterInfected=clusterInfected + newInfection;
+               
+               %update total amount of horizontal infection happening
+               newHorizontalInfec = newHorizontalInfec + newInfection;
 
             end
 
@@ -558,6 +573,10 @@ for i = 2:numIterations
     numAmoebas = sum(getSizeEnvironment(environment),"all");
     amoebaTotals(i) = numAmoebas;
     
+    %put total amounts of horizontal and vertical infection into arrays
+    verticalTotals(i)= newVerticalInfec;
+    horizontalTotals(i) = newHorizontalInfec;
+    
     %update current food and food variable list
     %food decreases based on the number of amoebas in the environment
     %and ensure that food doesn't go below zero. 
@@ -580,6 +599,8 @@ end
 %amoebas
 graphInfectionTotals(infectionTotals,amoebaTotals, infectedReproductionRate,...
     fruitingBodyIter)
+graphInfectionType(horizontalTotals, verticalTotals,...
+    infectedReproductionRate)
 show_CA_List(environmentList,fruitingBodyIter, ...
       rows,columns,1, foodList,integerVisualization,initialNumAmoebas,numInfected);
 
@@ -684,13 +705,32 @@ function graphInfectionTotals(infectionTotals,amoebaTotals,...
     
 
     xlabel('Time in Hours');
-    ylabel('Total Number of Infected Amoebas');
+    ylabel('Total Number of Amoebas');
     legend('Total Number of Amoebas','Number of Amoebas Infected', ...
         'Fruiting Body Formation');
-    title(['Total Number of Infected Amoebas Over Time with Infected Reproduction Rate of ', ...
+    title(['Total Number of Amoebas Over Time with Infected Reproduction Rate of ', ...
         num2str(infectedReproductionRate)]);
 end
 
+function graphInfectionType(horizontalTotals,verticalTotals, ...
+    infectedReproductionRate)
+
+    time = 1:1:length(verticalTotals);
+    figure(3)
+    bar(time, horizontalTotals);
+    xlabel('Time in Hours');
+    ylabel('Total Number of Infected Amoebas');
+    title(['Number of Vertically Infected Amoebas Over Time with Infected Reproduction Rate of ', ...
+         num2str(infectedReproductionRate)]);
+    
+    
+    figure(4)
+    bar(time, verticalTotals);
+    xlabel('Time in Hours');
+    ylabel('Total Number of Infected Amoebas');
+     title(['Number of Horizontally Infected Amoebas Over Time with Infected Reproduction Rate of ', ...
+         num2str(infectedReproductionRate)]);
+end
 
 %this function is used to visualize the simulation after environment values
 %have been stored in the environmentList. It takes in the environmentList,
@@ -741,7 +781,8 @@ function [ ] = show_CA_List(environmentList, fruitingBodyIter,...
             19*infectedInterval,20*infectedInterval,21*infectedInterval]; 
         
         %labels the colorbar based on the scale established above. 
-        bar1.TickLabels={'empty',sprintf('%d infected amoeba',infectedInterval),...
+        bar1.TickLabels={'empty',sprintf('%d infected amoeba',...
+            infectedInterval),...
             sprintf('%d infected amoeba',2*infectedInterval),...
             sprintf('%d infected amoeba',3*infectedInterval),...
             sprintf('%d infected amoeba',4*infectedInterval),...
