@@ -199,8 +199,14 @@ for i = 1:numClusters
 end
 
 %keeps track of the number of clusters that are active in the environment.
-% All clusters are initially active.
-aliveClusters = length(clusterPositions);  
+%check to see if there are only two coordinates in which case there is only
+%one cluster
+if nnz(clusterPositions) == 2
+    aliveClusters = 1;
+else
+    %otherwise there are as many as the length of the positions
+    aliveClusters = length(clusterPositions);
+end  
 
 %update extended environment to contain the newly initiated environment
 extEnvironment(2:rows+1, 2:columns+1) = environment;
@@ -392,7 +398,7 @@ for i = 2:numIterations
                 
                 %update vertical infection
                 newVerticalInfec = newVerticalInfec + clusterInfected-...
-                    clusterInfected/infectedReproductionRate;
+                    round(clusterInfected/infectedReproductionRate);
 
             end
 
@@ -751,10 +757,9 @@ function [ ] = show_CA_List(environmentList, fruitingBodyIter,...
     %this is used for colorbar visualization. determines the interval that
     %we will increment color visualization on by dividing the maximum value
     %by 20 and splitting it into sections
-    infectedInterval=round(numInfected/20);
-    sizeInterval=round(numAmoebas/20);
-    disp(sizeInterval)
-    
+    infectedInterval=max([round(numInfected/20),1]);
+    sizeInterval=max([round(numAmoebas/20),1]);
+
     %beggins iterating through each environment in the environment list
     
     for i=1:interval:length(environmentList)
@@ -912,7 +917,7 @@ function [ ] = show_CA_List(environmentList, fruitingBodyIter,...
                 if (integerVisualization==1 && sizeEnvironment(m,j)~=0)
                     text(j, m, num2str(sizeEnvironment(m, j)), ...
                         'HorizontalAlignment', 'center', 'VerticalAlignment'...
-                        , 'middle', 'FontSize', 8, 'Color', 'magenta');
+                        , 'middle', 'FontSize', 8, 'Color', 'green');
                 end
             end
         end
